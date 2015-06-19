@@ -1,0 +1,368 @@
+<?php
+
+/**
+ * Implementation of access callback for pco_batches_menu().
+ */
+function _pco_batches_access() {
+  return user_is_logged_in();
+}
+
+/**
+ * Implements hook_menu().
+ */
+function pco_batches_menu() {
+  $items = array();
+  $items['pco_batches'] = array(
+    'title' => 'pco batches',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pco_batches_form'),
+    'access callback' => '_pco_batches_access',
+    'type' => MENU_CALLBACK
+  );
+  return $items;
+}
+
+/**
+ * Form builder function to allow choice of which batch to run.
+ */
+function pco_batches_form() {
+  $form['batch'] = array(
+    '#type' => 'select',
+    '#title' => 'Choose batch',
+    '#options' => array(
+      'batch_0' => t('----------------'),
+      'batch_1' => t('update nodes'),
+      //'batch_2' => t('update users work country code'),
+      //'batch_3' => t('update users mobile country code'),
+      //'batch_4' => t('update users office'),
+      'batch_5' => t('fix user`s "name" and "job title" fields'),
+    ),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Go',
+  );
+  return $form;
+}
+
+function pco_batches_form_submit($form, &$form_state) {
+  $function = 'pco_batches_' . $form_state['values']['batch'];
+  $_SESSION['http_request_count'] = 0; // reset counter for debug information.
+  $batch = $function();
+  batch_set($batch);
+}
+
+
+// === batch_0 ===\
+
+function pco_batches_batch_0() {
+  drupal_set_message(t('Creating an array of @num operations', array('@num' => 0)));
+}
+
+// === batch_0 ===/
+
+
+
+// === batch_1 === update nodes ===\
+
+function pco_batches_batch_1() {
+  $content_types_fields = array();
+  //$content_types = array('page', 'client', 'teaser', 'testimonial');
+  $content_types = array('client', 'teaser');
+  foreach ($content_types as $content_type) {
+    $fields = array();
+    $instances = field_info_instances('node', $content_type);
+    foreach ($instances as $name => $instance) {
+      $fields[] = $name;
+    }
+    $content_types_fields[$content_type] = $fields;
+  }
+
+  $nids = db_select('node', 'n')
+    ->fields('n', array('nid'))
+    ->condition('n.language', 'da')
+    ->condition('n.type', $content_types, 'IN')
+    ->execute()
+    ->fetchCol();
+  $num_operations = count($nids);
+
+  drupal_set_message(t('Creating an array of @num operations', array('@num' => $num_operations)));
+  $operations = array();
+  for ($i = 0; $i < $num_operations; $i++) {
+    $operations[] = array(
+      'pco_batches_op_1',
+      array(
+        $nids[$i],
+        $content_types_fields,
+        t('(Operation @operation)',
+        array('@operation' => $i)),
+      )
+    );
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'pco_batches_finished',
+  );
+  return $batch;
+}
+
+function pco_batches_op_1($nid, $content_types_fields, $operation_details, &$context) {
+  $node = node_load($nid);
+  db_update('node')
+    //->fields(array('language' => 'da',))
+    ->fields(array('language' => 'und',))
+    ->condition('nid', $nid, '=')
+    ->execute();
+
+  foreach ($content_types_fields[$node->type] as $field) {
+    db_update('field_data_' . $field)
+      ->fields(array('language' => 'und'))
+      ->condition('entity_id', $nid, '=')
+      ->condition('entity_type', 'node', '=')
+      //->fields(array('language' => 'da'))
+      //->condition('entity_id', $nid, '=')
+      ->execute();
+    db_update('field_revision_' . $field)
+      ->fields(array('language' => 'und'))
+      ->condition('entity_id', $nid, '=')
+      ->condition('entity_type', 'node', '=')
+      //->fields(array('language' => 'da'))
+      //->condition('entity_id', $nid, '=')
+      ->execute();
+  }
+
+  $context['results'][] = $nid . ' : ' . check_plain($node->title);
+  $context['message'] = t('Loading node "@title"', array('@title' => $nid)) . ' ' . $operation_details;
+  _pco_batches_update_http_requests();
+}
+
+// === batch_1 === update nodes ===/
+
+
+
+// === batch_2 === update users work country code ===\
+
+function pco_batches_batch_2() {
+  $uids = db_select('field_data_field_work_number', 'fdfwn')
+    ->fields('fdfwn', array('entity_id'))
+    ->execute()
+    ->fetchCol();
+  $num_operations = count($uids);
+
+  drupal_set_message(t('Creating an array of @num operations', array('@num' => $num_operations)));
+  $operations = array();
+  for ($i = 0; $i < $num_operations; $i++) {
+    $operations[] = array(
+      'pco_batches_op_2',
+      array(
+        $uids[$i],
+        t('(Operation @operation)',
+        array('@operation' => $i)),
+      )
+    );
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'pco_batches_finished',
+  );
+  return $batch;
+}
+
+function pco_batches_op_2($uid, $operation_details, &$context) {
+  $user = user_load($uid);
+  $edit = array(
+    'field_work_number_country_code' => array(
+      LANGUAGE_NONE => array(
+        0 => array(
+          'value' => '+45',
+        ),
+      ),
+    ),
+  );
+  user_save($user, $edit);
+
+  $context['results'][] = $uid . ' : ' . check_plain($node->title);
+  $context['message'] = t('Loading user "@title"', array('@title' => $uid)) . ' ' . $operation_details;
+  _pco_batches_update_http_requests();
+}
+
+// === batch_2 === update users work country code ===/
+
+
+
+// === batch_3 === update users mobile country code ===\
+
+function pco_batches_batch_3() {
+  $uids = db_select('field_data_field_mobile_number', 'fdfmn')
+    ->fields('fdfmn', array('entity_id'))
+    ->execute()
+    ->fetchCol();
+  $num_operations = count($uids);
+
+  drupal_set_message(t('Creating an array of @num operations', array('@num' => $num_operations)));
+  $operations = array();
+  for ($i = 0; $i < $num_operations; $i++) {
+    $operations[] = array(
+      'pco_batches_op_3',
+      array(
+        $uids[$i],
+        t('(Operation @operation)',
+        array('@operation' => $i)),
+      )
+    );
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'pco_batches_finished',
+  );
+  return $batch;
+}
+
+function pco_batches_op_3($uid, $operation_details, &$context) {
+  $user = user_load($uid);
+
+  $edit = array(
+    'field_mobile_number_country_code' => array(
+      LANGUAGE_NONE => array(
+        0 => array(
+          'value' => '+45',
+        ),
+      ),
+    ),
+  );
+  user_save($user, $edit);
+
+  $context['results'][] = $uid . ' : ' . check_plain($node->title);
+  $context['message'] = t('Loading user "@title"', array('@title' => $uid)) . ' ' . $operation_details;
+  _pco_batches_update_http_requests();
+}
+
+// === batch_3 === update users mobile country code ===/
+
+
+
+// === batch_4 === update users office ===\
+
+function pco_batches_batch_4() {
+  $uids = db_select('users', 'u')
+    ->fields('u', array('uid'))
+    ->condition('u.uid', 0, '<>')
+    ->execute()
+    ->fetchCol();
+  $num_operations = count($uids);
+
+  drupal_set_message(t('Creating an array of @num operations', array('@num' => $num_operations)));
+  $operations = array();
+  for ($i = 0; $i < $num_operations; $i++) {
+    $operations[] = array(
+      'pco_batches_op_4',
+      array(
+        $uids[$i],
+        t('(Operation @operation)',
+        array('@operation' => $i)),
+      )
+    );
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'pco_batches_finished',
+  );
+  return $batch;
+}
+
+function pco_batches_op_4($uid, $operation_details, &$context) {
+  $chisinau_office_people = array(137, 140, 139, 141, 138);
+  $office_value = in_array($uid, $chisinau_office_people) ? 'chisinau' : 'copenhagen';
+
+  $user = user_load($uid);
+  $edit = array(
+    'field_office' => array(
+      LANGUAGE_NONE => array(
+        0 => array(
+          'value' => $office_value,
+        ),
+      ),
+    ),
+  );
+  user_save($user, $edit);
+
+  $context['results'][] = $uid . ' : ' . check_plain($node->title);
+  $context['message'] = t('Loading user "@title"', array('@title' => $uid)) . ' ' . $operation_details;
+  _pco_batches_update_http_requests();
+}
+
+// === batch_4 === update users office ===/
+
+
+
+// === batch_5 === update nodes ===\
+
+function pco_batches_batch_5() {
+  $entity_ids = array(129, 131, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 150, 151);
+  $num_operations = count($entity_ids);
+
+  drupal_set_message(t('Creating an array of @num operations', array('@num' => $num_operations)));
+  $operations = array();
+  for ($i = 0; $i < $num_operations; $i++) {
+    $operations[] = array(
+      'pco_batches_op_5',
+      array(
+        $entity_ids[$i],
+        t('(Operation @operation)',
+        array('@operation' => $i)),
+      )
+    );
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'pco_batches_finished',
+  );
+  return $batch;
+}
+
+function pco_batches_op_5($entity_id, $operation_details, &$context) {
+  $fields = array('field_name', 'field_job_title');
+  foreach ($fields as $field) {
+    db_update('field_data_' . $field)
+      ->fields(array('language' => 'und'))
+      ->condition('entity_id', $entity_id, '=')
+      ->condition('bundle', 'user', '=')
+      ->execute();
+    db_update('field_revision_' . $field)
+      ->fields(array('language' => 'und'))
+      ->condition('entity_id', $entity_id, '=')
+      ->condition('bundle', 'user', '=')
+      ->execute();
+  }
+
+  $context['results'][] = $nid . ' : ' . check_plain($node->title);
+  $context['message'] = t('Loading node "@title"', array('@title' => $nid)) . ' ' . $operation_details;
+  _pco_batches_update_http_requests();
+}
+
+// === batch_5 === update nodes ===/
+
+
+
+// === service functions ===\
+
+function pco_batches_finished($success, $results, $operations) {
+  if ($success) {
+    drupal_set_message(t('@count results processed in @requests HTTP requests.', array('@count' => count($results), '@requests' => _pco_batches_get_http_requests())));
+    drupal_set_message(t('The final result was "%final"', array('%final' => end($results))));
+  }
+  else {
+    $error_operation = reset($operations);
+    drupal_set_message(t('An error occurred while processing @operation with arguments : @args', array('@operation' => $error_operation[0], '@args' => print_r($error_operation[0], TRUE))));
+  }
+}
+
+function _pco_batches_update_http_requests() {
+  $_SESSION['http_request_count']++;
+}
+
+function _pco_batches_get_http_requests() {
+  return !empty($_SESSION['http_request_count']) ? $_SESSION['http_request_count'] : 0;
+}
+
+// === service functions ===/

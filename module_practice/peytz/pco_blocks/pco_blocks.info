@@ -1,0 +1,8 @@
+; $Id$
+name = Peytz blocks
+description = Defines teaser blocks for Panels.
+core = 7.x
+package = Panels
+
+files[] = pco_blocks.module
+;files[] = pco_blocks.install

@@ -1,0 +1,6 @@
+name = "Peytz Site"
+description = "Peytz site module"
+package = "Peytz & Co."
+project = "pco_site"
+version = "7.x-1.0"
+core = "7.x"

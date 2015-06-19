@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * Implements hook_help().
+ */
+function tablesorter_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#tablesorter':
+      return '<p>' . t('Add class "tablesorter" to your Table code like in example given. <table id="myTable" class="tablesorter"> .') . '</p>';
+
+    break;
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function tablesorter_init() {
+  $path = drupal_get_path('module', 'tablesorter');
+  drupal_add_js($path . '/jquery.tablesorter.min.js');
+  $theme = variable_get('tablesorter_theme', 'system');
+  $options = array(
+    'type' => 'file',
+    'group' => CSS_DEFAULT,
+    'basename' => 'tablesortertheme.css',
+  );
+  drupal_add_css($path . '/themes/blue/style.css', $options);
+}

@@ -1,0 +1,413 @@
+<?php
+
+/**
+ * @file
+ * Make auto-mapping for Siteattention.
+ */
+
+/**
+ * Implements hook_foo().
+ */
+function siteattention_addition_menu() {
+  $items = array();
+
+  $items['admin/settings/siteattention-mapping'] = array(
+    'title' => 'SiteAttention mapping',
+    'description' => 'Make auto-mapping for SiteAttention.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('siteattention_mapping_form'),
+    'access arguments' => array('view siteattention plugin'),
+  );
+
+  $items['admin/settings/siteattention-mapping/config'] = array(
+    'title' => 'Configuration for mapping',
+    'description' => 'Configure realtion between field type and SEO field.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('config_mapping_form'),
+    'access arguments' => array('administer siteattention settings'),
+  );
+
+  return $items;
+}
+
+/**
+ * Create form for html automapping.
+ */
+function siteattention_mapping_form($form, &$form_state) {
+  $node_types_active = 0;
+
+  $form['help_text'] = array(
+   '#markup' => t('Note! Mapping for URL alias and publish button will be done automatically.')
+  );
+
+  $field_relation = variable_get('siteattention_fields_relations');
+  $options = array(0 => t('- Not mapped -'));
+  if ($field_relation) {
+    foreach ($field_relation as $key => $data) {
+      $options[$key] = $data['description'];
+    }
+  }
+  asort($options);
+  $node_types = _node_types_build()->types;
+  foreach ($node_types as $node_type) {
+    if (variable_get('siteattention_status_' . $node_type->type)) {
+      $default_value = variable_get('siteattention_' . $node_type->type . '_html');
+      $node_types_active++;
+      $form['siteattention_status_' . $node_type->type] = array(
+        '#type' => 'fieldset',
+        '#title' => check_plain($node_type->name),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE
+      );
+      $form['siteattention_status_' . $node_type->type]['map_table'] = array(
+        '#prefix' => '<div id="map-table">',
+        '#suffix' => '</div>',
+        '#tree' => TRUE,
+        '#theme' => 'siteattention_addition_mapping_table'
+      );
+      if ($node_type->has_title) {
+        $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_title']['name'] = array(
+          '#markup' => t('Title')
+        );
+        $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_title']['field_type'] = array(
+          '#markup' => t('Textfield')
+        );
+        $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_title']['map_type'] = array(
+          '#type' => 'select',
+          '#options' => $options,
+          '#default_value' => $default_value['title'] ? $default_value['title'] : 0
+        );
+      }
+      // Get other fields of content type.
+      $fields = field_info_instances('node', $node_type->type);
+      foreach ($fields as $field_machine_name => $field) {
+        $field_type_array = explode('_', $field['widget']['type']);
+        $field_type = array_shift($field_type_array);
+        if ($field_type == 'text') {
+          $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_' . $field_machine_name]['name'] = array(
+            '#markup' => t(check_plain($field['label']))
+          );
+          $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_' . $field_machine_name]['field_type'] = array(
+            '#markup' => t(ucfirst(implode(' ', $field_type_array)))
+          );
+          $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_' . $field_machine_name]['map_type'] = array(
+            '#type' => 'select',
+            '#options' => $options,
+            '#default_value' => $default_value[$field_machine_name] ? $default_value[$field_machine_name] : 0
+          );
+          if (array_pop($field_type_array) == 'summary' && ($field_machine_name == 'body' || $field['settings']['display_summary'])) {
+            $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_' . $field_machine_name . '_summary']['name'] = array(
+              '#markup' => t(check_plain($field['label']) . '\'s summary')
+            );
+            $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_' . $field_machine_name . '_summary']['field_type'] = array(
+              '#markup' => t('Textarea')
+            );
+            $form['siteattention_status_' . $node_type->type]['map_table'][$node_type->type . '_' . $field_machine_name . '_summary']['map_type'] = array(
+              '#type' => 'select',
+              '#options' => $options,
+              '#default_value' => $default_value[$field_machine_name . '_summary'] ? $default_value[$field_machine_name . '_summary'] : 0
+            );
+          }
+        }
+      }
+    }
+  }
+
+  if ($node_types_active > 0) {
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save')
+    );
+  }
+  else {
+    $form['help_text'] = array(
+      '#markup' => t('First need to select node types with that will work Siteattention!')
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Save mapping for content types.
+ */
+function siteattention_mapping_form_submit($form, &$form_state) {
+
+  $node_types = _node_types_build()->types;
+  foreach ($node_types as $node_type) {
+    if (variable_get('siteattention_status_' . $node_type->type)) {
+      $node_type_data = array();
+      if ($node_type->has_title) {
+        $node_type_data['title'] = $form_state['values']['map_table'][$node_type->type . '_title']['map_type'];
+      }
+      $fields = field_info_instances('node', $node_type->type);
+      foreach ($fields as $field_machine_name => $field) {
+        $field_type_array = explode('_', $field['widget']['type']);
+        $field_type = array_shift($field_type_array);
+        if ($field_type == 'text') {
+          $node_type_data[$field_machine_name] = $form_state['values']['map_table'][$node_type->type . '_' . $field_machine_name]['map_type'];
+          if (array_pop($field_type_array) == 'summary' && ($field_machine_name == 'body' || $field['settings']['display_summary'])) {
+            $node_type_data[$field_machine_name . '_summary'] = $form_state['values']['map_table'][$node_type->type . '_' . $field_machine_name . '_summary']['map_type'];
+          }
+        }
+      }
+      variable_set('siteattention_' . $node_type->type . '_html', $node_type_data);
+    }
+  }
+
+  drupal_set_message(t('Changes has been saved.'));
+}
+
+/**
+ * Implements hook_form_alter().
+ * Make auto-mapping based on introduced configuration in Siteattention mapping.
+ */
+function siteattention_addition_form_alter(&$form, &$form_state, $form_id) {
+  global $language;
+  $is_node_form = preg_match("/-node-form$/", $form['#id']);
+  $get_node_sa_status = isset($form['type']) ? variable_get('siteattention_status_' . $form['type']['#value'], 0) : 0;
+  // Check if need to add siteattention auto-mapping.
+  if ($is_node_form && $get_node_sa_status == 1 && user_access('view siteattention plugin')) {
+    $node_mapping_html = variable_get('siteattention_' . $form['type']['#value'] . '_html');
+    $relations = variable_get('siteattention_fields_relations');
+    foreach ($node_mapping_html as $field_name => $field_config) {
+      // Check if field is not mapped.
+      if ($field_config == 0) {
+        continue;
+      }
+      $explode = explode('_', $field_name);
+      $last_word = array_pop($explode);
+      $field_real_name = implode('_', $explode);
+      $machine_name = $last_word == 'summary' ? $field_real_name : $field_name;
+      $numerickeys = array(0);
+      $exist_field = isset($form[$machine_name][$language->language]);
+
+      if ($exist_field && is_array($form[$machine_name][$language->language])) {
+        $numerickeys = array_filter(array_keys($form[$machine_name][$language->language]), 'is_int');
+      }
+      foreach ($numerickeys as $key) {
+        $exist_summary = isset($form[$machine_name][$language->language][$key]['summary']);
+        $is_container = $form[$machine_name]['#type'] == 'container';
+        $has_value = isset($form[$machine_name][$language->language][$key]['value']);
+        // Add mapping for summary field.
+        if ($last_word == 'summary' && $exist_summary) {
+          $form[$machine_name][$language->language][$key]['summary']['#attributes'] = mapping_array(
+            $relations[$field_config],
+            $form[$machine_name][$language->language][$key]['summary']['#title']
+          );
+        }
+        // Add mapping for simple textarea field like field_deck.
+        elseif ($is_container && $has_value) {
+          $form[$machine_name][$language->language][$key]['value']['#attributes'] = mapping_array(
+            $relations[$field_config],
+            $form[$machine_name][$language->language]['#title']
+          );
+        }
+        // Add mapping for complex textarea field like body.
+        elseif ($is_container && !$has_value) {
+          $form[$machine_name][$language->language][$key]['#attributes'] = mapping_array(
+            $relations[$field_config],
+            $form[$machine_name][$language->language]['#title']
+          );
+        }
+        // Add mapping for simple input field like title.
+        else {
+          $form[$machine_name]['#attributes'] = mapping_array(
+            $relations[$field_config],
+            $form[$machine_name]['#title']
+          );
+        }
+      }
+    }
+    // Add mapping for url alias field.
+    if ($form['path']) {
+      $form['path']['alias']['#attributes'] = mapping_array(
+        array('field_type' => 'input', 'seo_field' => 'url'),
+        $form['path']['alias']['#title']
+      );
+    }
+    // Add mapping for submit button.
+    $form['actions']['submit']['#attributes'] = mapping_array(
+      array('seo_field' => 'publish_button'),
+      '',
+      TRUE
+    );
+  }
+}
+
+/**
+ * Function for creating array for form alter mapping.
+ */
+function mapping_array($data_mapping, $name_field, $button = FALSE) {
+  $array_result = array(
+    'class' => array('siteattention_automap'),
+    'data-sa-contentfield' => $data_mapping['seo_field']
+  );
+  if (!$button) {
+    $array_result['data-sa-fieldtype'] = $data_mapping['field_type'];
+    $array_result['data-sa-name'] = $name_field;
+  }
+  return $array_result;
+}
+
+/**
+ * Form to determine relation between field type and SEO field.
+ */
+function config_mapping_form($form, &$form_state) {
+  $form['note'] = array(
+    '#markup' => t('Note! Do not add mapping for SEO fields: url and publish_button.') . '<br><br>',
+  );
+
+  $form_state['storage']['relation'] = isset($form_state['storage']['relation']) ? $form_state['storage']['relation'] : 0;
+
+  $relations = variable_get('siteattention_fields_relations');
+  if ($relations) {
+    foreach ($relations as $key => $relation) {
+      $fields_config[$key] = array(
+        'description' => $relation['description'],
+        'field_type' => $relation['field_type'],
+        'seo_field' => $relation['seo_field'],
+      );
+    }
+  }
+  // Add additional empty row.
+  $to = $form_state['storage']['relation'] == 0 ? 1 : $form_state['storage']['relation'];
+  for ($i = 1; $i <= $to; $i++) {
+    $fields_config[++$key] = array(
+      'description' => '',
+      'field_type' => '',
+      'seo_field' => '',
+    );
+  }
+
+  $form['config_fields'] = array(
+    '#prefix' => '<div id="config-fields">',
+    '#suffix' => '</div>',
+    '#tree' => TRUE,
+    '#theme' => 'siteattention_addition_config_table'
+  );
+
+  foreach ($fields_config as $key => $field_config) {
+    $form['config_fields'][$key]['description'] = array(
+      '#type' => 'textfield',
+      '#size' => 30,
+      '#default_value' => $field_config['description'],
+    );
+    $form['config_fields'][$key]['field_type'] = array(
+      '#type' => 'textfield',
+      '#size' => 30,
+      '#default_value' => $field_config['field_type'],
+    );
+    $form['config_fields'][$key]['seo_field'] = array(
+      '#type' => 'textfield',
+      '#size' => 30,
+      '#default_value' => $field_config['seo_field'],
+    );
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+  $form['add_row'] = array(
+    '#type' => 'button',
+    '#value' => t('Add row'),
+    '#ajax' => array(
+      'callback' => 'ajax_add_row_callback',
+    ),
+  );
+
+  $form_state['storage']['relation']++;
+
+  return $form;
+}
+
+/**
+ * Save configuration for mapping.
+ */
+function config_mapping_form_submit($form, &$form_state) {
+  $config_fields = array();
+  foreach ($form_state['values']['config_fields'] as $key => $value) {
+    if ($value['description'] && $value['field_type'] && $value['seo_field']) {
+      $config_fields[$key] = array(
+        'description' => $value['description'],
+        'field_type' => str_replace(' ', '', $value['field_type']),
+        'seo_field' => str_replace(' ', '', $value['seo_field'])
+      );
+    }
+  }
+  variable_set('siteattention_fields_relations', $config_fields);
+  drupal_set_message(t('Relations was saved!'));
+}
+
+/**
+ * Implements hook_theme().
+ */
+function siteattention_addition_theme($existing, $type, $theme, $path) {
+  return array(
+    'siteattention_addition_config_table' => array(
+      'render element' => 'element'
+    ),
+    'siteattention_addition_mapping_table' => array(
+      'render element' => 'element'
+    )
+  );
+}
+
+/**
+ * Theme mapping table.
+ */
+function theme_siteattention_addition_mapping_table($vars) {
+  $element = $vars['element'];
+
+  $header = array(
+    'name' => t('Field name'),
+    'field_type' => t('Field type'),
+    'map_type' => t('Mapping type')
+  );
+
+  $rows = array();
+  foreach (element_children($element) as $key) {
+    $row = array();
+    $row['data'] = array();
+    foreach ($header as $fieldname => $title) {
+      $row['data'][] = drupal_render($element[$key][$fieldname]);
+    }
+    $rows[] = $row;
+  }
+
+  return theme('table', array('header' => $header, 'rows' => $rows));
+}
+
+/**
+ * Theme config table.
+ */
+function theme_siteattention_addition_config_table($vars) {
+  $element = $vars['element'];
+
+  $header = array(
+    'description' => t('Description'),
+    'field_type' => t('Field type'),
+    'seo_field' => t('SEO field')
+  );
+
+  $rows = array();
+  foreach (element_children($element) as $key) {
+    $row = array();
+    $row['data'] = array();
+    foreach ($header as $fieldname => $title) {
+      $row['data'][] = drupal_render($element[$key][$fieldname]);
+    }
+    $rows[] = $row;
+  }
+
+  return theme('table', array('header' => $header, 'rows' => $rows));
+}
+
+/**
+ * Ajax calback for new row in config table.
+ */
+function ajax_add_row_callback($form, &$form_state) {
+  $commands[] = ajax_command_replace("#config-fields", render($form['config_fields']));
+  return array('#type' => 'ajax', '#commands' => $commands);
+}

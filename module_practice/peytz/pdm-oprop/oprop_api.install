@@ -1,0 +1,25 @@
+<?php
+// $Id: oprop_api.install,v 1.2 2011-04-19 07:39:03 ys Exp $
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Oprop API module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function oprop_api_uninstall() {
+  // Clear any variables that might be in use
+  $variables = array(
+    'oprop_api_server',
+    'oprop_api_login',
+    'oprop_api_password',
+    'oprop_api_cache_enabled',
+    'oprop_api_show_on_useredit',
+    'oprop_api_send_invitation',
+  );
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+}

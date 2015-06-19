@@ -1,0 +1,70 @@
+<?php
+/**
+ * @file
+ * Code for the Filtering Price for Catalog "/catalog" page.
+ *
+ */
+
+/**
+ * Implements hook_form_views_exposed_form_alter().
+ */
+function tm_utility_form_views_exposed_form_alter(&$form, $form_state) {
+  if ($form['#id'] == 'views-exposed-form-Catalog-panel-pane-1') {
+
+    // Find min and max value.
+    $query = db_select('field_data_field_price');
+    $query->addExpression('MIN(field_price_value)', 'min');
+    $query->addExpression('MAX(field_price_value)', 'max');
+    $limits = $query->execute()->fetch();
+
+    // Widget wrapper.
+    $form['field_price_value']['#prefix'] = '<div class ="slider-widget-wrapper" data-min = "'
+      . $limits->min . '" data-max ="' . $limits->max . '">';
+    $form['field_price_value']['#suffix'] = '</div>';
+
+    // Attach js and css-files.
+    $form['#attached']['library'][] = array('system', 'ui.slider');
+    $form['#attached']['js'][] = drupal_get_path('module', 'tm_utility') . '/tm_utility.js';
+    $form['#attached']['css'][] = drupal_get_path('module', 'tm_utility') . '/tm_utility.css';
+  }
+}
+
+/**
+ * Implements hook_preproces_views_view().
+ */
+function tm_utility_preprocess_views_view_grid(&$vars) {
+  $name = $vars['view']->name;
+  $query = db_query("
+    SELECT nid, RAND() as random_nid
+    FROM {node}
+    WHERE type = 'banner' AND status = 1
+    ORDER BY random_nid ASC LIMIT 1"
+  );
+  $nid = $query->fetchColumn(0);
+  if (!empty($nid)) {
+    $banner_node = node_load($nid);
+    $image_baner = field_get_items('node', $banner_node, 'field_image_baner');
+    $banner = field_view_value('node', $banner_node, 'field_image_baner',
+    $image_baner[0], array(
+      'type'      => 'image',
+      'settings'  => array(
+        'image_style' => 'banner_style',
+      )
+    ));
+
+    // Add link banner image.
+    $link = $banner_node->field_link['und'][0]['value'];
+    $banner_link = array(
+      '#type'       => 'link',
+      '#title'      => render($banner),
+      '#href'       => $link,
+      '#options'    => array('html' => TRUE),
+      '#class'      => 'custom-banner',
+      '#attributes' => array('target' => '_blank')
+    );
+
+    if ($name == 'Catalog' || 'categorys_block' || 'keywords_block') {
+      $vars['banner_image'] = $banner_link;
+    }
+  }
+}

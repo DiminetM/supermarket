@@ -1,0 +1,8 @@
+; $Id: oprop_subscribers.info,v 1.1.6.1 2009-08-25 11:30:35 jva Exp $
+name = Oprop Subscribers
+description = "Peytz OPROP subscribers feed"
+configure = admin/config/system/oprop/subscribers
+version = "7.x-1.0-alpha2"
+core = 7.x
+package = "Peytz & Co."
+dependencies[] = oprop_api

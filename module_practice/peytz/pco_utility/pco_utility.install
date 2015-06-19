@@ -1,0 +1,12 @@
+<?php
+/**
+ * Remove obsolete field in order to have consistent job titles
+ */
+function pco_utility_update_7101(&$sandbox) {
+  db_delete('field_data_field_job_title')
+    ->condition('entity_type', 'user', '=')
+    ->condition('language', 'da', '=')
+    ->execute();
+
+  return t('Old job-title field removed.');
+}

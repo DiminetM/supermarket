@@ -1,0 +1,4 @@
+; Drush configuration
+  drupal core = 7.x
+hostnames[] = test_marchet.drupal7.lvdev.peytz.dk
+

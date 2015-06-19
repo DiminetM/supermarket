@@ -1,0 +1,24 @@
+/**
+ * @file 
+ * Stylesheet for Flexible: 14/4.
+ *
+ * @see pco_panels.base.css
+ *
+ * This file should only contain administration styles,
+ * or styles specific to this layout.
+ *
+ */
+
+/* Administration */
+
+.page-admin div.deck .fourteen {
+	width: 77.777777778%;
+}
+
+.page-admin div.deck .four {
+	width: 22.222222222%;
+}
+
+.page-admin div.deck .right.seven {
+	float: right;
+}

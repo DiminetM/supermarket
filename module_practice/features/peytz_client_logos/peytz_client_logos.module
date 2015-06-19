@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz client logos feature.
+ */
+
+include_once('peytz_client_logos.features.inc');

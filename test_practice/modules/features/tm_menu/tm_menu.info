@@ -1,0 +1,10 @@
+name = Menu
+description = Here are menu store
+core = 7.x
+package = Market
+version = 7.x-1.0
+project = tm_menu
+dependencies[] = features
+dependencies[] = menu
+features[features_api][] = api:2
+features[menu_custom][] = main-menu

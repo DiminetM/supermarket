@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz footer rebuild feature.
+ */
+
+include_once('peytz_footer_rebuild.features.inc');

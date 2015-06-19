@@ -1,0 +1,11 @@
+name = Apache solr search page
+description = Apachesolr search page in panels module
+core = 7.x
+package = Features
+dependencies[] = apachesolr_panels
+dependencies[] = ctools
+dependencies[] = current_search
+dependencies[] = page_manager
+features[ctools][] = page_manager:pages_default:1
+features[features_api][] = api:2
+features[page_manager_pages][] = Apache_solr_search_page

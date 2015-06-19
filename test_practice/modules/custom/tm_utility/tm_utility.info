@@ -1,0 +1,4 @@
+name = Test Market Utility
+description = jQuery UI Slider for range price
+package = Utility
+core = 7.x

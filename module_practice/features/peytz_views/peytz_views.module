@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz Views feature.
+ */
+
+include_once 'peytz_views.features.inc';

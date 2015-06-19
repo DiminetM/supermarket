@@ -1,0 +1,5 @@
+name = Peytz Subscription
+description = Subscription for newsletter. Integration with Peytz Mail module.
+package = Peytz & Co
+version = 1.0
+core = 7.x

@@ -1,0 +1,3 @@
+name = Oprop image fix
+description = Image references to peytz.dk in old newsletters will still work when this module is enabled.
+core = 7.x

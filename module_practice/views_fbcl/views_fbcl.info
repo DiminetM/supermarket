@@ -1,0 +1,9 @@
+name = Views Filter by Current Site Language
+description = Extends views's displays to get content filtered by current site language
+package = Views
+core = 7.x
+
+dependencies[] = views_ui
+dependencies[] = locale
+
+files[] = includes/views_fbcl_plugin_filter.inc

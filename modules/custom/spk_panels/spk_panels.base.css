@@ -1,0 +1,160 @@
+/**
+ * @file 
+ * Main stylesheet for panels
+ *
+ * This file is intended for general layout styles.
+ *
+ * All widths are derived from the following formula:
+ * target ÷ context = result
+ *
+ * Pixel values are added to comments next to properties.
+ *
+ * For additional and layout specific CSS:
+ * @see plugins/layouts/*
+ */
+
+div.block-system .content > div.grid-display,
+div.block-system .content .contextual-links-region > div.grid-display {
+	padding: 42px 0 0;
+}
+
+div.block-system .content > header,
+div.block-system .content .contextual-links-region > header {
+	padding: 20px 0 5px;
+}
+
+div.block-system .content > header div.deck,
+div.block-system .content .contextual-links-region > header div.deck {
+	margin: 0 auto;
+	width: 96.969697%; /* 960 / 990 */
+	max-width: 960px;
+}
+
+div.deck {
+  overflow: hidden;
+  clear: both;
+}
+
+div.deck .column {
+	float: left;
+	padding: 0;
+}
+
+div.deck .column.full {
+	float: none;
+	width: 100%;
+}
+
+div.deck .column.left {
+  float: left;
+}
+
+div.deck .column.right {
+  float: right;
+}
+
+/* @group Grid sizes */
+div.deck .four {
+	width: 19.7916667%; /* 190 / 960 */
+}
+
+div.deck .six {
+	width: 31.25%; /* 300 / 960 */
+}
+
+div.deck .ten {
+	width: 54.1666667%; /* 520 / 960 */
+}
+
+div.deck .right.seven {
+	float: right;
+	padding: 0;
+	width: 36.9791667%; /* 355 / 960 */
+}
+
+div.deck .twelve {
+	width: 65.625%; /* 630 / 960 */
+}
+
+div.deck .twelve .twelve {
+  padding: 0;
+	width: 100%;
+}
+
+div.deck .twelve .six {
+  width: 47.6190476%; /* 300 / 630 */
+}
+
+div.deck .twelve .six.left { 
+  padding: 0 1.5625% 0 0;
+}
+
+div.deck .twelve .six.right { 
+  padding: 0 0 0 1.5625%;
+}
+
+div.deck .fourteen {
+	width: 77.0833333%; /* 740 / 960 */
+}
+
+/* @end */
+/* @group Grid relative padding */
+
+div.deck .column.left {
+	padding: 0 1.5625% 0 0; /* 15 / 960 */
+}
+
+div.deck .column.middle {
+	padding: 0 1.5625%; /* 15 / 960 */
+}
+
+div.deck .column.right {
+	padding: 0 0 0 1.5625%; /* 15 / 960 */
+}
+
+/* @end */
+
+/* @group Administration */
+
+.page-admin div.deck {
+	overflow: visible;
+	float: left;
+	width: 100%;
+}
+
+.page-admin div.deck .column {
+	margin: .5% 1%;
+	padding: 0 !important;
+}
+
+.page-admin div.deck .column.full {
+	overflow: visible;
+	width: 98%;
+} 
+
+.page-admin div.deck .column div:first-child {
+  margin: 0 0 .5%;
+}
+
+.page-admin div.deck .twelve {
+	width: 64.6666667%;
+}
+
+.page-admin div.deck .twelve .twelve {
+  margin: .5% 0;
+  width: 100%;
+}
+
+.page-admin div.deck .six {
+	width: 31.3333333%;
+}
+
+.page-admin div.deck .column > .six {
+  width: 49%;
+}
+
+.page-admin div.deck .column > .six.left { margin: .5% 1% .5% 0; }
+
+.page-admin div.deck .column > .six.right { margin: .5% 0 .5% 1%; }
+
+/* @end */

@@ -1,0 +1,114 @@
+<?php
+// $Id: oprop_subscribers.module,v 1.1.6.6 2011-07-01 13:59:44 wulff Exp $
+
+/**
+ * @file
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function oprop_subscribers_menu() {
+  if (variable_get('oprop_subscribers_provide_feeds', FALSE)) {
+    $items['oprop/subscribers/%'] = array(
+      'title' => 'Subscribers',
+      'description' => 'Oprop subscriber feeds.',
+      'page callback' => 'oprop_subscribers_list',
+      'page arguments' => array(2),
+      'access callback' => 'oprop_subscribers_feed_access',
+      'type' => MENU_CALLBACK,
+    );
+  }
+
+  $items['admin/config/system/oprop/subscribers'] = array(
+    'title' => 'Subscriber feeds',
+    'description' => 'Oprop subscriber feed settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('oprop_subscribers_settings'),
+    'access arguments' => array('administer site configuration'),
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'oprop_subscribers.admin.inc',
+  );
+
+  return $items;
+  
+}
+
+/**
+ * @defgroup "Oprop Subscriber Feeds"
+ */
+
+/**
+ * Gets subscriber list in Peytz XML format.
+ */
+function oprop_subscribers_list($feed) {
+
+  if ($feed == 'all') {
+    $subscriber_list = oprop_subscribers_all();
+  }
+  else {
+    $feeds = module_invoke_all('oprop_subscribers');
+    if ($feeds[$feed]) {
+      $subscriber_list = $feeds[$feed]['callback']();
+    }
+    else {
+      return drupal_access_denied();
+    }
+  }
+
+  require_once('oprop_subscribers_feed.tpl.php');
+  $output = $template_prefix;
+  foreach ($subscriber_list as $subscriber) {
+    $output .= sprintf($template, $subscriber->uid, check_plain($subscriber->mail));
+  }
+  $output .= $template_suffix;
+  print $output;
+  die();
+}
+
+/**
+ * Default subscriber list.
+ */
+function oprop_subscribers_all() {
+  $list = array();
+  $q = db_query("SELECT u.uid, u.mail FROM {users} as u WHERE u.status = 1 AND u.uid > 1");
+  foreach ($q as $user) {
+    $list[] = $user;    
+  }
+  return $list;
+}
+
+/**
+ * Checks external access rules for subscriber feeds.
+ */
+function oprop_subscribers_feed_access() {
+  return in_array(ip_address(), _oprop_allowed_ips()) || user_access('access administration pages');
+}
+
+/**
+ * Provide an array with the IP-addresses allowed to access oprop.
+ *
+ * Kept in the code, so we can roll it out on all our customer sites easily
+ *
+ * @return array The list of IP-addresses
+ */
+function _oprop_allowed_ips() {
+  $addresses = array();
+  // Add our server number range
+  foreach (range(20, 43) as $number) { // Oebro
+    $addresses[] = '194.192.186.' . $number;
+  }
+  foreach (range(129, 254) as $number) { // Jay.net
+    $addresses[] = '81.7.134.' . $number;
+  }
+
+  $addresses[] = '80.199.116.190'; // Rentemestervej
+  $addresses[] = '62.243.131.41'; // Rentemestervej
+
+  return $addresses;
+}
+
+/**
+ * @} End defgroup "Oprop Subscriber Feeds"
+ */

@@ -1,0 +1,47 @@
+header[role="banner"] div.top,
+header[role="banner"] footer > div,
+div[role="main"] > section,
+footer > div div.deck,
+div[role="main"] div.grid-display,
+div[role="main"] div.system {
+	margin: 0 auto;
+	width: 96.969697%; /* 960 / 990 */
+	min-width: 960px;
+	max-width: 960px;
+}
+
+div.block-system .content > header div.deck, 
+div.block-system .content .contextual-links-region > header div.deck {
+  margin: 0 auto;
+  width: 96.969697%;
+  min-width: 960px;
+	max-width: 960px;
+}
+
+header[role="banner"] div.top {
+  margin: 0 auto 20px;
+}
+
+/* @group views */
+
+div.view-slideshow-frontpage h1 span {
+	background: rgb(255,114,0);
+}
+
+/* @end */
+/* @group modal */
+
+#modal-overlay {
+  background: transparent url('../../images/ie/opacity40.png');
+}
+
+/* @end */
+
+/* @group view-client-logos */
+
+.view-client-logos .client-logos li {
+  clear: none;
+  width: 50%;
+}
+
+/* @end */

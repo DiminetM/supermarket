@@ -1,0 +1,8 @@
+name = Peytz Mail API
+description = Basic module for communication to Peytz Mail API. Provides basic REST client and queuing of calls.
+package = Peytz & Co
+version = 1.0
+core = 7.x
+files[] = peytz_mail.module
+files[] = peytz_mail.admin.inc
+configure = admin/config/peytz_mail

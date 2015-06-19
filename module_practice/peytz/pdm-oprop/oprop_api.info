@@ -1,0 +1,7 @@
+; $Id: oprop_api.info,v 1.1.6.1 2009-08-25 11:30:35 jva Exp $
+name = Oprop API
+description = "Peytz OPROP integration"
+configure = admin/config/system/oprop
+version = "7.x-1.0-alpha2"
+core = 7.x
+package = "Peytz & Co."

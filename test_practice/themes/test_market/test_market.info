@@ -1,0 +1,43 @@
+name = Test Market
+description = Custom theme for market
+
+;screenshot = screenshot.png
+core = 7.x
+
+; -----------------------------------------------------------------------------
+; STYLES
+; -----------------------------------------------------------------------------
+stylesheets[all][] = css/reset.css
+stylesheets[all][] = css/layout.css
+stylesheets[all][] = css/style.css
+stylesheets[all][] = css/custom-jcarousel.css
+stylesheets[all][] = css/test_market.css
+stylesheets[print][] = css/print.css
+; Disable some system styles
+stylesheets[all][] = system.menus.css
+
+; -----------------------------------------------------------------------------
+; SCRIPTS
+; -----------------------------------------------------------------------------
+scripts[] = js/test_market.js
+scripts[] = js/topMessages.js
+
+; -----------------------------------------------------------------------------
+; REGIONS
+; -----------------------------------------------------------------------------
+regions[header] = Header
+regions[subheader] = Subheader
+regions[search] = Search
+regions[help] = Help
+regions[highlighted] = Highlighted
+regions[sidebar_first] = Sidebar (left)
+regions[content] = Content
+regions[sidebar_second] = Sidebar (right)
+regions[footer] = Footer
+regions[page_top] = Page top
+regions[page_bottom] = Page bottom
+
+; Information added by drupal.org packaging script on 2012-12-20
+version = "7.x-1.0"
+core = "7.x"
+project = "test_market"

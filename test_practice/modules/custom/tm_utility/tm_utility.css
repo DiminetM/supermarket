@@ -1,0 +1,39 @@
+/**
+ * @file
+ * tm_utility styles
+ */
+.slider-widget-wrapper {
+  width: 180px;
+}
+.slider-widget-wrapper .form-item:nth-child(1) {
+  float: left;
+}
+
+
+.slider-widget-wrapper .form-item:nth-child(2) {
+  float: right;
+}
+
+
+.slider-widget-wrapper .form-item:nth-child(2) label {
+  display: none;
+}
+
+
+.slider-widget-wrapper .form-item:nth-child(2) .form-text {
+  text-align: right;
+}
+
+
+.slider-widget-wrapper .form-text {
+  width: 80px !important;
+  margin: 0 0 5px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+
+.slider-widget-wrapper .slider-widget {
+  clear: both;
+}

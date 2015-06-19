@@ -1,0 +1,6 @@
+name = Peytz Mail Subscribe
+description = Newsletter signup using the Peytz Mail service. Provides very basic implementation of newsletter subscription that could be used in simple cases.
+package = Peytz & Co
+version = 1.0
+core = 7.x
+dependencies[] = peytz_mail

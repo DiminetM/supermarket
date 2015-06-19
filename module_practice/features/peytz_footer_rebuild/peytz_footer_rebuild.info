@@ -1,0 +1,8 @@
+name = Peytz footer rebuild
+description = Rebuild the site footer to include client logos
+core = 7.x
+package = Features
+php = 5.2.4
+dependencies[] = ctools
+features[ctools][] = panels_mini:panels_default:1
+features[features_api][] = api:1

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz Tak! page feature.
+ */
+
+include_once 'peytz_tak_page.features.inc';

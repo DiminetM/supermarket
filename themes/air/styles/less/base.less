@@ -1,0 +1,726 @@
+/**
+ * @file
+ * base.css
+ *
+ * Main stylesheet for peytz.dk.
+ * Contains general typography and theming
+ */
+
+/* Import LESS files */
+@import url('radius.less');
+
+/* @group Global */
+
+html { -webkit-text-size-adjust: none }
+
+html, body {
+	width: 100%;
+	height: 100%;
+	min-height: 100%;
+}
+
+body {
+	color: rgb(14,14,14);
+	font: normal 14px/21px Georgia, "Times New Roman", serif;
+	-webkit-font-smoothing: antialiased;
+	//background: rgb(38,38,38);
+}
+
+img,
+embed,
+object {
+  max-width: 100%;
+}
+
+/* @group Typography */
+
+h1,h2,h3,h4,h5,h6 {
+	font-weight: normal;
+	font-family: NewsGothicBT-Roman, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+	color: rgb(70,70,70);
+
+	&:empty {
+    display: none;
+  }
+}
+
+h1, h2 {
+	padding: 0 0 20px;
+	line-height: 1.1em;
+}
+
+h1 {
+	font-size: 2.571428571em;
+}
+
+h2 {
+	font-size: 1.714285714em;
+}
+
+h3, h4, h5 {
+  padding: 0;
+	font-size: 1em;
+	line-height: 1.428571429em;
+}
+
+div.prose h2 {
+  font-size: 1.714285714em;
+}
+
+div.prose h2,
+div.prose h3,
+div.prose h4 {
+  color: rgb(42,42,42);
+}
+
+div.prose h3 {
+  font-weight: bold;
+  font-family: NewsGothicBT-Bold, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+}
+
+footer h2,
+footer h3,
+footer div.grid-display section.panel-pane h2,
+footer div.grid-display section.panel-pane h3 {
+	font-size: 1.714285714em;
+	font-family: NewsGothicBT-Roman, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+}
+
+footer .grid-display h2,
+footer .grid-display h2 { color: rgb(255,255,255); }
+
+p {
+	padding: 0 0 20px;
+}
+
+input, textarea {
+	font: normal 1em/1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+div.prose, div.link-to-description {
+  color: rgb(62,62,62);
+	font: normal 1.071428571em/1.5em Georgia, Times, "Times New Roman", serif;
+}
+
+div.content > div.prose {
+  clear: both;
+}
+
+blockquote {
+  margin: 0 0 20px;
+  padding: 30px 5.7692308% 15px;
+  font-size: .933333333em;
+  line-height: 1.5em;
+  font-style: italic;
+  background: rgb(234,234,234);
+
+  a {
+      color:  #f06c22;
+  }
+
+  h3 {
+    margin-bottom: 10px;
+  }
+
+  &.darkgray {
+    background: #2A2A2A;
+    color: #fff;
+    strong {
+      color:  #f06c22;
+      font-size: 14px;
+    }
+  }
+
+  &.lightgray {
+    background: rgb(234,234,234);
+    a {
+      font-weight: bold;
+    }
+  }
+
+  &.orange {
+    background: #f06c22;
+    color: #fff;
+    a {
+      color:  #000;
+    }
+  }
+}
+
+
+/* @end */
+
+
+/* @group .page-employees */
+.page-employees {
+  .panels-ajax-tab {
+    border-top: 0 !important;
+    overflow: hidden;
+
+    li {
+      float: left;
+      margin-right: 10px;
+      border-radius: 3px;
+      padding: 0px 10px;
+      border: 1px solid #EAEAEA;
+      font-size: 17px;
+
+      &.active, &:hover  {
+        background: #f06c22;
+        border: 1px solid #f06c22 !important;
+        a {
+          color: #fff;
+        }
+      }
+    }
+  }
+}
+/* @end */
+
+
+
+
+/* @group Links */
+
+a, a:visited {
+	text-decoration: none;
+	color: #f06c22;
+	outline: none;
+	font-weight: normal;
+}
+
+a:hover {
+	color: rgb(255,153,0);
+}
+
+a:active { text-decoration: underline; }
+
+/* @group Action links */
+
+div.action-links {
+	display: none;
+	margin: 0 auto;
+	width: 960px;
+}
+
+/* @end */
+/* @group Lists */
+
+div.prose ul,
+div.prose ol,
+section.panel-pane div.prose ul {
+  margin: 0 0 20px;
+  padding: 0 0 0 40px;
+  border: none;
+}
+
+div.prose ol {
+  padding: 0 0 0 40px;
+}
+
+div.prose ul > li,
+section.panel-pane div.prose ul > li {
+  margin: 0;
+  padding: 0;
+  list-style: disc;
+  border: none;
+}
+
+div.prose ol > li {
+  list-style: decimal-leading-zero;
+}
+
+/* @end */
+/* @end */
+/* @group Layout */
+
+article,
+aside,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+nav,
+section {
+  display: block;
+}
+
+header[role="banner"] div.top,
+header[role="banner"] div.header > div,
+div[role="main"] > section,
+footer > div div.deck,
+div[role="main"] div.grid-display,
+div[role="main"] div.system {
+	margin: 0 auto;
+	width: 96.969697%; /* 960 / 990 */
+	max-width: 960px;
+}
+
+header[role="banner"] div.top {
+	position: relative;
+	overflow: hidden;
+	margin: 0 auto 20px;
+}
+
+header[role="banner"] div.top div.logo {
+	float: left;
+	width: 220px;
+	min-height: 46px;
+	line-height: 0;
+	margin-top: 3px;
+
+	img {
+		vertical-align: bottom;
+	}
+}
+
+header[role="banner"] div[role="navigation"] {
+	width: 100%;
+}
+
+header[role="banner"] div.block-apachesolr-panels {
+	position: absolute;
+	top: 0;
+	right: 0;
+	padding: 10px 0 0;
+}
+
+header[role="banner"] div.block-apachesolr-panels label {
+  display: none;
+}
+
+header[role="banner"] div.block-apachesolr-panels div.form-item {
+	float: left;
+	margin: 0;
+	padding: 0;
+}
+
+header[role="banner"] div.block-apachesolr-panels div.form-item input.form-text {
+	width: 115px;
+	min-width: 20px;
+	border-width: 1px 0 1px 1px;
+	-webkit-appearance: none;
+	.border-radius-right(0);
+	.border-radius-left(3px);
+}
+
+header[role="banner"] div.block-apachesolr-panels div.form-actions {
+	float: left;
+}
+
+div#main-content {
+	overflow: hidden;
+	width: 100%;
+	background: rgb(255,255,255);
+}
+
+div#main-content > section {
+  padding: 20px 0;
+}
+
+div#block-system-main {
+  clear: both;
+}
+
+footer,
+div.header {
+	font: normal 0.92857143em/2.4em "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	color: rgb(255,255,255);
+}
+
+body > footer {
+  overflow: hidden;
+	padding: 0 0 130px;
+	background: rgb(0,0,0) url(../../images/logo-footer-peytz.png) no-repeat center 168px;
+}
+
+footer div.content {
+	font-size: 1em;
+	line-height: 1.6em;
+}
+
+footer div.content > header {
+	padding: 40px 0 30px;
+	color: rgb(38,38,38);
+	background: rgb(234,234,234);
+}
+
+footer div.content > header h2 {
+	color: rgb(170,170,170);
+}
+
+footer div.content > div.grid-display {
+	padding: 40px 0 30px;
+}
+
+footer .deck-3 .pane-content {
+	border-top: 1px solid rgb(74,74,74);
+	padding-top: 45px;
+
+	ul {
+
+		> li {
+			float: left;
+			width: (100%/3);
+			display: block;
+			line-height: 0;
+
+			a {
+				float: left;
+				display: block;
+
+				img {
+					vertical-align: bottom;
+				}
+			}
+
+			&.logo-a a {
+				width: 97px;
+				height: 118px;
+			}
+
+			&.logo-b a {
+				width: 302px;
+				height: 53px;
+				margin-top: 27px;
+			}
+
+			&.logo-c a {
+				width: 109px;
+				height: 119px;
+				float: right;
+			}
+		}
+	}
+}
+
+header[role="banner"] div.block-apachesolr-panels div.form-actions input.form-submit {
+	overflow: hidden;
+	margin: 0;
+	width: 34px;
+	height: 25px;
+	color: rgb(255,255,255);
+	border: none;
+	line-height: 0;
+	text-indent: -9999px;
+	.border-radius-right(3px);
+	background: #f06c22 url(../../images/icons.png) no-repeat 0 0;
+}
+
+header[role="banner"] div.block-apachesolr-panels div.form-actions input.form-submit:hover,
+header[role="banner"] div.block-apachesolr-panels div.form-actions input.form-submit:focus {
+	cursor: pointer;
+	background-color: rgb(255,153,0);
+}
+
+/* @group Presentation */
+
+header[role="banner"] {
+	position: relative;
+	padding: 3px 0 0;
+	background: rgb(255,255,255);
+}
+
+div[role="navigation"] div.header {
+	overflow: hidden;
+	clear: both;
+}
+
+/* @group block-system / header */
+
+div.block-system .content > header,
+div.block-system .content .contextual-links-region > header {
+	color: rgb(255,255,255);
+	font: normal 1em/1.5em "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	background: #f06c22;
+}
+
+.front div.block-system .content > header,
+.front div.block-system .content .contextual-links-region > header {
+	padding: 0;
+	background: rgb(218,218,218);
+}
+
+div.block-system .content > header h1,
+div.block-system .content .contextual-links-region > header h1 {
+	float: left;
+	width: 48.4375%; /* 465 / 960 */
+	font-size: 4.285714286em;
+	line-height: 1em;
+	color: rgb(255,255,255);
+}
+
+div.block-system .content > header div.description,
+div.block-system .content .contextual-links-region > header div.description {
+	float: right;
+	margin: 10px 0 20px;
+	width: 48.4375%; /* 465 / 960 */
+	font-size: 1.428571429em;
+	line-height: 1.2em;
+}
+
+div.block-system .content > header div.description p,
+div.block-system .content .contextual-links-region > header div.description p {
+  margin: 0;
+  padding: 0;
+}
+
+/* @end */
+/* @group User */
+
+article.profile header {
+	position: relative;
+	margin: 0 0 30px;
+	padding: 0 0 30px;
+	min-height: 148px;
+	border-bottom: 1px solid rgb(234,234,234);
+}
+
+article.profile header h1 {
+	margin: 0;
+	padding: 0 0 5px;
+}
+
+article.profile header div.field-name-field-job-title,
+article.profile header div.field-name-field-job-title-no {
+	margin: 0 0 20px;
+	font-size: 16px;
+	color: rgb(120,120,120);
+}
+
+article.profile header div.field-label {
+  width: 42.4242424%; /* 140 / 330 */
+	text-transform: uppercase;
+}
+
+article.profile header div.content {
+  position: relative;
+  width: 68.2692308%; /* 520 */
+  z-index: 10;
+}
+
+article.profile header div.user-picture {
+	overflow: hidden;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	z-index: 0;
+	/*width: 35.5769231%;*/ /* 185 / 520 */
+}
+
+article.profile header div.user-picture img {
+	float: left;
+}
+
+/* @end */
+/* @end */
+/* @end */
+/* @group Assets */
+
+a.button {
+  float: left;
+	.border-radius(3px);
+	display: block;
+	padding: 4px 32px 4px 10px;
+	color: rgb(255,255,255);
+	font-size: 1.071428571em;
+	line-height: normal;
+	font-weight: bold;
+	text-transform: uppercase;
+	background: #f06c22 url(../../images/icons.png) no-repeat 100% -149px;
+}
+
+a.button:hover {
+	text-decoration: none;
+	background-color: rgb(255,153,0);
+}
+
+/* @group Meta */
+
+div.meta {
+  overflow: hidden;
+  position: relative;
+	margin: 0 0 20px -3px;
+	font-size: .714285714em;
+	text-transform: uppercase;
+	line-height: 15px;
+	color: rgb(106,106,106);
+}
+
+div.meta a {
+  font-weight: bold;
+}
+
+div.meta .field-label {
+  display: inline;
+}
+
+div.meta .tags {
+  position: relative;
+  top: -1px;
+	text-transform: lowercase;
+	font: italic 1.3em/14px Georgia, Times, "Times New Roman", serif;
+}
+
+div.meta .tags span {
+  float: left;
+  padding: 0 3px 0 0;
+  line-height: normal;
+}
+
+div.meta .tags div.field-name-field-category {
+  float: left;
+}
+
+div.meta a,
+div.meta strong,
+div.meta span.div,
+div.meta .tags {
+  float: left;
+  display: block;
+	margin: 0 3px 0;
+}
+
+div.meta .tags a {
+	margin: 0 3px 0 0;
+	font-weight: normal;
+	line-height: normal;
+}
+
+div.meta .user-picture {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+div.meta .user-picture img {
+  float: left;
+}
+
+/* @end */
+/* @group Pagination */
+
+div.pager {
+  position: relative;
+  margin: 30px 0 0;
+  width: 100%;
+  height: 21px;
+  font: bold 1.071428571em/1.5em "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+div.pager > .pager-links {
+  font: 1.071428571em/1.5em NewsGothicBT-Bold, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+div.pager > .pager-links li {
+  z-index: 10;
+  position: absolute;
+  top: 0;
+}
+
+div.pager > .pager-links li a { line-height: normal; }
+
+div.pager > .pager-links li.pager-next {
+  right: 0;
+}
+
+div.pager > .pager-links li.pager-last {
+  left: 0;
+}
+
+div.pager > .pager-links li.pager-next a {
+  padding: 0 20px 0 0;
+  background: transparent url('../../images/icons.png') no-repeat 100% -178px;
+}
+
+div.pager > .pager-links li.pager-next a:hover {
+  background: transparent url('../../images/icons.png') no-repeat 100% -203px;
+}
+
+div.pager > .pager-links li.pager-previous a {
+  padding: 0 0 0 20px;
+  background: transparent url('../../images/icons.png') no-repeat 0 -103px;
+}
+
+div.pager > .pager-links li.pager-previous a:hover {
+  background: transparent url('../../images/icons.png') no-repeat 0 -128px;
+}
+
+div.pager > .pager-list {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+div.pager > .pager-list li {
+  display: inline;
+}
+
+div.pager > .pager-list li a,
+div.pager > .pager-list li span {
+  padding: 1px 6px;
+}
+
+div.pager > .pager-list li.pager-current span {
+  color: rgb(255,255,255);
+  background: #f06c22;
+}
+
+/* @end */
+/* @group Search */
+
+ol.search-results article h2 {
+  margin: 0;
+  padding: 0;
+  font: bold 1.285714286em/1.5em NewsGothicBT-Bold, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+}
+
+ol.search-results article p {
+  padding: 0 0 10px;
+}
+
+ol.search-results li {
+  margin: 0 0 10px;
+  border-bottom: 1px solid rgb(234,234,234);
+}
+
+.pane-apachesolr-sort ul li a {
+  display: block;
+  padding: 0 0 0 20px;
+}
+
+.pane-apachesolr-sort ul li a.active {
+  background: transparent url(../../images/icons.png) no-repeat -10px -324px;
+}
+
+.pane-apachesolr-sort ul li img { display: none; }
+
+.pane-facetapi-uhns32zbeaddhz0dm-v5ibpbf7m0bp-g .pane-content ul li {
+  overflow: hidden;
+}
+
+.pane-facetapi-uhns32zbeaddhz0dm-v5ibpbf7m0bp-g .pane-content ul li em {
+  float: left;
+  font-style: normal;
+}
+
+.pane-facetapi-uhns32zbeaddhz0dm-v5ibpbf7m0bp-g .pane-content ul li a.facetapi-active { float: left; }
+
+.pane-facetapi-uhns32zbeaddhz0dm-v5ibpbf7m0bp-g .pane-content ul li a.facetapi-active span {
+  overflow: hidden;
+  float: right;
+  display: block;
+  margin: 9px 0 0 4px;
+  width: 8px;
+  height: 8px;
+  text-indent: -9999px;
+  background: transparent url('../../images/icons_remove.png') no-repeat 0 0;
+}
+/* @end */
+/* @end */
+/* @end */

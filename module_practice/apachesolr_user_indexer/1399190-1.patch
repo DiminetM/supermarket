@@ -1,0 +1,29 @@
+diff --git a/apachesolr_user.module b/apachesolr_user.module
+index 127fda9..4116645 100644
+--- a/apachesolr_user.module
++++ b/apachesolr_user.module
+@@ -65,7 +65,7 @@ function apachesolr_user_solr_document(ApacheSolrDocument $document, $account, $
+  * Reindexing callback for ApacheSolr, for users.
+  */
+ function apachesolr_user_solr_reindex() {
+-  $indexer_table = apachesolr_index_get_indexer_table('user');
++  $indexer_table = apachesolr_get_indexer_table('user');
+   $transaction = db_transaction();
+   $env_id = apachesolr_default_environment();
+   try {
+@@ -75,7 +75,7 @@ function apachesolr_user_solr_reindex() {
+ 
+     // We know there's only one bundle type, so if that doesn't get indexed just
+     // skip this entirely.
+-    if (apachesolr_index_get_bundles($env_id, 'user')) {
++    if (apachesolr_get_index_bundles($env_id, 'user')) {
+       $select = db_select('users', 'u');
+       $select->addExpression("'user'", 'entity_type');
+       $select->addExpression("'user'", 'bundle');
+@@ -97,4 +97,4 @@ function apachesolr_user_solr_reindex() {
+   }
+ 
+   return TRUE;
+-}
+\ No newline at end of file
++}

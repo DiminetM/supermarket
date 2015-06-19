@@ -1,0 +1,10 @@
+name = Peytz blocks export
+description = Export custom blocks (zopim, social_media_icons)
+core = 7.x
+package = Features
+dependencies[] = fe_block
+features[fe_block_boxes][] = zopim
+features[fe_block_boxes][] = zopim_no
+features[fe_block_settings][] = block-zopim
+features[fe_block_settings][] = block-zopim_no
+features[features_api][] = api:2

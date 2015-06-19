@@ -1,0 +1,215 @@
+/**
+ * @file
+ * forms.css
+ *
+ * This stylesheet is intended for form
+ * specific styling.
+ */
+
+/* Import main LESS file */
+@import url('main.less');
+
+/* @group General */
+input.form-text,
+textarea {
+  .border-box-sizing;
+	margin: 0;
+	padding: 3px 8px;
+	width: 100%;
+	min-width: 200px;
+	height: 25px;
+	font: normal 1.071428571em/1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+	border: 1px solid rgb(215,215,215);
+	-webkit-appearance: none;
+	.border-radius(3px);
+}
+
+input.form-text:hover,
+textarea:hover {
+	background: rgb(251,251,245);
+}
+
+input.form-text:focus,
+textarea:focus {
+	background: rgb(249,247,239);
+}
+
+footer input.form-text,
+div.pane-webform-client-block-127 input.form-text {
+  padding: 4px 8px;
+  border: none;
+}
+input.form-submit {
+  margin: 0 5px 0 0;
+  padding: 3px 28px 3px 8px;
+  font: bold 1.071428571em/19px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-transform: uppercase;
+  text-align: left;
+	color: rgb(255,255,255);
+  cursor: pointer;
+  border: none;
+  .border-radius(3px);
+  background: #f06c22 url('../../images/icons.png') no-repeat 100% -150px;
+}
+
+/* Removes extra Firefox input submit padding */
+input.form-submit::-moz-focus-inner {
+  border: none;
+}
+
+input.form-submit:hover,
+input.form-submit:focus {
+  background-color: rgb(255,153,0);
+}
+
+div.form-item {
+  position: relative;
+  margin: 0 0 15px;
+}
+
+div.container-inline div.form-item {
+  display: block;
+  float: left;
+  margin: 0 10px 0 0;
+}
+
+div.form-item.form-type-checkbox {
+  margin: 0;
+}
+
+div.text-format-wrapper {
+  margin: 0 0 15px;
+}
+
+div.form-item > div.description {
+  margin: 10px 0;
+  font: normal .785714286em/1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: rgb(255,255,255);
+}
+
+label {
+  color: rgb(42,42,42);
+  font-weight: bold;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* @group Placeholders */
+
+div.form-item.js-input-ph label {
+  position: absolute;
+  top: 5px;
+  left: 9px;
+  cursor: text;
+  color: rgb(180,180,180);
+  font: normal 1.071428571em/1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.js-input-ph footer div.form-item label {
+  top: 6px;
+}
+
+/* @end */
+/* @end */
+/* @group Comment form */
+
+div.comment-form-wrap,
+section.panel-pane.pane-node-comment-form {
+  padding: 30px;
+  background: #f06c22;
+}
+
+div.comment-form-wrap h1,
+div.comment-form-wrap h2,
+div.comment-form-wrap h3,
+section.panel-pane.pane-node-comment-form h1,
+section.panel-pane.pane-node-comment-form h2,
+section.panel-pane.pane-node-comment-form h3 {
+  color: rgb(255,255,255);
+}
+
+form.comment-form input.form-text,
+form.comment-form textarea {
+	padding: 4px 10px;
+	height: auto;
+	border: none;
+	.border-radius(3px);
+}
+
+form.comment-form input.form-submit {
+  padding: 3px 28px 3px 8px;
+  border: 1px solid rgba(255,255,255,.7);
+  background: transparent url('../../images/icons.png') no-repeat 100% -149px;
+}
+
+form.comment-form input.form-submit:hover,
+form.comment-form input.form-submit:focus {
+  color: #f06c22;
+  background-color: white;
+  background-position: 100% -594px;
+}
+
+form.comment-form label {
+  color: rgb(255,255,255);
+}
+
+form.comment-form a {
+  color: rgb(255,255,255);
+}
+
+form.comment-form a:hover {
+  color: rgb(255,255,255);
+  text-decoration: underline;
+}
+
+/* @group Comments */
+
+section.panel-pane.pane-node-comments { margin: 0; padding: 0; }
+
+div.comment-wrap,
+section.panel-pane.pane-node-comments .pane-content {
+  padding: 0;
+  border-width: 1px 1px 0 1px;
+  border-style: solid;
+  border-color: rgb(234,234,234);
+}
+
+div.comment {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 5.7915058% 10px; /* 15 / 518 */
+  width: 88.4169884%;
+  border-bottom: 1px solid rgb(234,234,234);
+}
+
+div.comment .new {
+  display: block;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  text-indent: -9999px;
+  background: rgba(255,114,0,.4);
+}
+
+div.comment h3 {
+  color: rgb(42,42,42);
+  font: normal 1.285714286em/1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+div.comment > div.submitted {
+  margin: 0 0 15px;
+}
+
+div.comment > div.submitted p {
+  margin: 0;
+  padding: 0;
+}
+
+div.comment > div.content {
+  font: normal 1em/1.5em Georgia, Times New Roman, Times, serif;
+  color: #4a4a4a;
+}
+
+/* @end */

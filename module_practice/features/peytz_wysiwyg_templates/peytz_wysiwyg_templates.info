@@ -1,0 +1,16 @@
+name = Peytz wysiwyg templates
+core = 7.x
+package = Features
+dependencies[] = content_types
+dependencies[] = features
+dependencies[] = filter
+dependencies[] = media
+dependencies[] = video_filter
+dependencies[] = wysiwyg
+dependencies[] = wysiwyg_template
+features[features_api][] = api:2
+features[filter][] = wysiwyg_
+features[wysiwyg][] = wysiwyg_
+features[wysiwyg_template][] = quote_dark_grey
+features[wysiwyg_template][] = quote_light_grey
+features[wysiwyg_template][] = quote_orange

@@ -1,0 +1,206 @@
+<?php
+/**
+ * @file
+ * Importing the products in the data base.
+ */
+
+/**
+ * Implementation of hook_menu().
+*/
+function tm_import_menu() {
+  $items = array();
+  $items['admin/config/importing'] = array(
+    'title'       => 'Importing',
+    'description' => 'Allows administrators to import',
+    'weight'      => -30,
+    'page callback'   => 'drupal_get_form',
+    'page arguments'  => array('tm_import_form'),
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/importing/manage'] = array(
+    'title'       => 'Importing',
+    'description' => 'Allows admins to manage import',
+    'page callback'   => 'drupal_get_form',
+    'page arguments'  => array('tm_import_form',),
+    'access callback' => TRUE,
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+/**
+* Main config form for importing products.
+*/
+function tm_import_form() {
+  $config = variable_get('tm_import_config',
+    array(
+      'selected' => 10,
+      'api_key' => '',
+      'product_search' => '',
+      'batch_step' => 5,
+    )
+  );
+
+  $options = array();
+  for ($i = 10; $i <= 500; $i = $i + 10) {
+    $options[$i] = $i;
+  }
+
+  $form = array();
+  $form['selected'] = array(
+    '#type'     => 'select',
+    '#title'    => t('Products to import'),
+    '#options'  => $options,
+    '#default_value' => $config['selected'],
+  );
+
+  $form['api_key'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('APIKEY'),
+    '#size'  => 20,
+    '#maxlength' => 128,
+    '#default_value' => $config['api_key'],
+    '#required' => TRUE,
+  );
+
+  $form['product_search'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('Product Name search'),
+    '#size'  => 20,
+    '#maxlength' => 128,
+    '#default_value' => $config['product_search'],
+    '#required' => TRUE,
+  );
+
+  $form['batch_step'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('Batch step'),
+    '#size'  => 20,
+    '#maxlength' => 128,
+    '#default_value' => $config['batch_step'],
+    '#validate' => t('tm_import_form_validate'),
+    );
+
+  $form['save_config'] = array(
+    '#type'   => 'submit',
+    '#name'   => 'save_config',
+    '#value'  => t('Save config'),
+    '#weight' => 1,
+  );
+
+  $form['import'] = array(
+    '#type'   => 'submit',
+    '#name'   => 'import',
+    '#value'  => t('Import'),
+    '#weight' => 2,
+  );
+
+  return $form;
+}
+
+/**
+ * Custom function for validate form Batch step .
+ */
+function tm_import_form_validate($form_state) {
+  if(!is_numeric($form_state['batch_step']['#value'])){
+    form_set_error("batch_step",'Batch Step you must enter numeric value');
+  }
+}
+
+/**
+ * Custom callback function for importing products form.
+ */
+function tm_import_form_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#name'] == 'import') {
+    // Begin batch product import.
+    tm_import_batch($form_state);
+  }
+  else {
+    // Update and save import config data into db.
+    variable_set('tm_import_config',
+      array(
+        'selected' => $form_state['values']['selected'],
+        'api_key' => $form_state['values']['api_key'],
+        'product_search' => $form_state['values']['product_search'],
+        'batch_step' => $form_state['values']['batch_step']
+      )
+    );
+  }
+}
+
+/**
+ * Batch import process function.
+ *
+ * @param $form_state array
+ *   Submitted form data.
+ */
+function tm_import_batch($form_state) {
+
+
+  // $url = file_get_contents('http://www.SupermarketAPI.com/api.asmx/COMMERCIAL_SearchByProductName?APIKEY=952165ee16&ItemName=Parsley');
+  // $xml = new SimpleXMLElement($url);
+  $data = $form_state['values'];
+  $batch = array(
+    'title'     => t('Node processing'),
+    'operations' => array(
+      array('tm_import_add_products', array($data)),
+    ),
+    'finished'  => 'tm_import_finished_batch',
+  );
+
+  $progress = 0; // where to start
+  $limit = 5; // how many to process for each run
+  $max = 500; // how many records to process until stop - can do query here to get max times to run
+  while ($progress <= $max) {
+    $batch['operations'][] = array(
+      'tm_import_add_products', array($progress, $limit)
+      );
+    $progress = $progress + $limit;
+  }
+
+  batch_set($batch);
+  batch_process('admin/config/importing/manage');
+}
+
+function tm_import_add_products($progress, $limit, &$context){
+  $query = db_select('node', 'n');
+  $query->condition('type', 'products');
+  $query->fields('n');
+  $query->orderBy('n.nid', 'ASC');
+  $query->range($progress, $limit);
+  $nodes = $query->execute()->fetchAll();
+  foreach ($nodes as $node) {
+    $node = new stdClass ();
+    $node->type = 'products';
+    $node->title = '';
+    $feed = http_request_get($url);
+    if (!empty($feed->data)) {
+      $feed = common_syndication_parser_parse($feed->data);
+      if (!empty($feed['title'])) {
+        $node->title = $feed['title'];
+      }
+    $node->feeds['FeedsHTTPFetcher']['source'] = 'http://www.SupermarketAPI.com/api.asmx/COMMERCIAL_SearchByProductName?APIKEY=952165ee16&ItemName=Parsleyl';
+    node_save($node);
+    }
+  }
+  // update progress for message
+  $progress = $progress + $limit;
+  // update message during each run so you know where you are in the process
+  $context['message'] = 'Now processing ' . $progress . ' - ' . $context['results'][0] . ' imported';
+}
+function tm_import_finished_batch($success, $results, $operations) {
+   if ($success) {
+    drupal_set_message('Import is complete');
+  }
+  else {
+    $error_operation = reset($operations);
+    $message = t('An error occurred while processing %error_operation with arguments: @arguments', array(
+      '%error_operation' => $error_operation[0],
+      '@arguments' => print_r($error_operation[1], TRUE)
+    ));
+    drupal_set_message($message, 'error');
+  }
+}
+ ?>

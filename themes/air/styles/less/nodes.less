@@ -1,0 +1,312 @@
+/**
+ * @file
+ * Stylesheet for nodes
+ *
+ * This file is intended for styles specific to
+ * the node module and the content it generates.
+ *
+ */
+
+article.node div.image {
+  overflow: hidden;
+	margin: 0 0 20px;
+	border: 1px solid rgb(234,234,234);
+	background: rgb(255,255,255);
+}
+
+article.node div.image ul {
+  display: block;
+  position: relative;
+}
+
+section.panel-pane > .pane-content article.node div.image ul { border: none; }
+
+article.node div.image img {
+  float: left;
+  margin: 0;
+  padding: 0;
+}
+
+article.node div.image div.thumbs {
+  clear: left;
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+  margin: 0;
+  padding: 4px;
+  background: rgb(234,234,234);
+}
+
+article.node div.image div.thumbs div.item {
+  float: left;
+  margin: 5px;
+  padding: 0;
+}
+
+article.node div.image div.thumbs div.item a {
+  float: left;
+  border: 1px solid rgb(202,202,202);
+}
+
+article.node div.image div.thumbs div.item a:hover,
+article.node div.image div.thumbs div.item a:focus,
+article.node div.image div.thumbs div.item.active a {
+  border: 1px solid #f06c22;
+}
+
+article.node div.lead {
+	margin: 0 0 20px;
+	color: rgb(106,106,106);
+	font: normal 1.285714286em/1.4em NewsGothicBT-Roman, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+}
+
+article.node ul.links {
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+h2.cloned{
+  border-radius: 3px;
+  color: #fff;
+  font: normal 1.285714286em/1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+  cursor: pointer;
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #f06c22;
+
+  &:hover {
+    background: #ff9900;
+  }
+
+  &.active {
+    width: 26px;
+    float: right;
+    position: relative;
+    z-index: 5;
+    font-weight: bold;
+  }
+}
+
+.column.left section.panel-pane > .pane-content article.node-webform,
+.pane-node-field-related-webform article.node-webform {
+  margin-bottom: 20px;
+  border: 1px solid #f06c22;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 3px;
+  background: #fff;
+
+  h2:before {
+    width: 100%;
+    height: 49px;
+    position: absolute;
+    content: "";
+    top: -2px;
+  }
+}
+
+/* @group slideshow */
+
+article.node div.image.slideshow .item-list {
+  position: relative;
+}
+
+article.node div.image.slideshow.slide-processed .item-list ul li {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* @end */
+/* @group node-blog */
+article.node-blog div.meta {
+  margin: 0 0 20px;
+  padding: 0;
+  min-height: 75px;
+  font: normal 1em/1em Georgia, "Times New Roman", serif;
+  text-transform: none;
+  color: #0e0e0e;
+  border-bottom: 1px solid #eaeaea;
+}
+article.node-blog div.meta div.submitted {
+  padding: 5px 0 0;
+}
+article.node-blog div.meta div.submitted p {
+  margin: 0;
+  padding: 0 0 5px;
+}
+article.node-blog div.meta div.user-picture {
+  position: static;
+  float: left;
+  margin: 0 15px 0 5px;
+}
+article.node-blog div.meta div.tags {
+  margin: 5px 0 0;
+  font-size: 1em;
+  line-height: 1em;
+  color: #6a6a6a;
+}
+article.node-blog div.meta div.user-picture img {
+  max-width: 80px;
+}
+article.node-blog div.meta a {
+  display: inline;
+  float: none;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+article.node-blog div.video-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  padding-top: 30px;
+  height: 0;
+  overflow: hidden;
+}
+article.node-blog div.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+/* @end */
+/* @group node-product */
+.node-type-product .pane-content h1 {
+  font-size: 3.4em;
+  margin: 0;
+  padding: 0;
+}
+
+.node-type-product .field-name-field-deck {
+	color: rgb(106,106,106);
+	font: normal 1.285714286em/1.4em NewsGothicBT-Roman, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+}
+
+.node-type-product section.panel-pane.pane-node-field-deck {
+  margin: 0;
+}
+
+.node-type-product .lead {
+  display: none;
+}
+
+.node-type-product section.panel-pane.pane-node-field-related {
+  background: #EAEAEA;
+
+  > .pane-content .item-list ul {
+    border: 0;
+    padding: 10px;
+
+    li {
+      border: 0;
+      a {
+        color: #333;
+
+        &:hover {
+          color: #f06c22;
+        }
+      }
+    }
+  }
+
+  h2 {
+    padding: 10px 10px 0;
+    text-transform: uppercase;
+    margin: 0;
+  }
+}
+/* @end */
+/* @group node-product */
+.node-type-product {
+  .pane-content h1 {
+    font-size: 3.4em;
+    margin: 0;
+    padding: 0;
+  }
+
+  .node-testimonial {
+    background: #EAEAEA;
+    margin-bottom: 40px;
+    padding: 20px;
+
+    h2 a, p {
+
+      font-family: "Helvetica Neue", Arial, sans-serif;;
+    }
+  }
+}
+
+.node-type-product section.panel-pane.pane-node-field-related {
+  background: #EAEAEA;
+
+  > .pane-content .item-list ul {
+    border: 0;
+    padding: 10px;
+
+    li {
+      border: 0;
+      a {
+        color: #333;
+
+        &:hover {
+          color: #f06c22;
+        }
+      }
+    }
+  }
+
+  h2 {
+    padding: 10px 10px 0;
+    text-transform: uppercase;
+    margin: 0;
+  }
+}
+/* @end */
+/* @group node-product */
+.node-type-product {
+  .pane-content h1 {
+    font-size: 3.4em;
+    margin: 0;
+    padding: 0;
+  }
+
+  .node-testimonial {
+    background: #EAEAEA;
+    margin-bottom: 40px;
+    padding: 20px;
+
+    h2 a, p {
+
+      font-family: "Helvetica Neue", Arial, sans-serif;;
+    }
+  }
+}
+
+.node-type-product section.panel-pane.pane-node-field-related {
+  background: #EAEAEA;
+
+  > .pane-content .item-list ul {
+    border: 0;
+    padding: 10px;
+
+    li {
+      border: 0;
+      a {
+        color: #333;
+
+        &:hover {
+          color: #f06c22;
+        }
+      }
+    }
+  }
+
+  h2 {
+    padding: 10px 10px 0;
+    text-transform: uppercase;
+    margin: 0;
+  }
+}
+/* @end */

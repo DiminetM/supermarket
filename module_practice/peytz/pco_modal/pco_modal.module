@@ -1,0 +1,75 @@
+<?php
+// $Id: pco_modal.module,v 1.6 2011-04-27 14:29:40 rk Exp $
+
+/**
+ * Implements hook_init().
+ */
+function pco_modal_init() {
+  drupal_add_js(drupal_get_path('module', 'pco_modal') . '/scripts/jquery.modal.js');
+  drupal_add_css(drupal_get_path('module', 'pco_modal') . '/styles/modal.css');
+}
+
+function pco_modal_theme() {
+  $theme['modal'] = array(
+    'variables' => array(
+      'messages' => '',
+      'content' => '',
+    ),
+  );
+
+  return $theme;
+}
+
+/**
+ * Implements hook_site_menu().
+ */
+function pco_modal_menu() {
+  $items = array();
+
+  $items['modal'] = array(
+    'title' => t('Modal'),
+    'description' => 'Modal handler.',
+    'page callback' => 'pco_modal_modal',
+    'page arguments' => array(),
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+function pco_modal_modal() {
+  $path = substr($_GET['q'], strpos($_GET['q'], '/') + 1);
+  $path = drupal_get_normal_path($path);
+
+  if ($router_item = menu_get_item($path)) {
+    if ($router_item['access']) {
+      if ($router_item['include_file']) {
+        require_once DRUPAL_ROOT . '/' . $router_item['include_file'];
+      }
+
+      $content  = call_user_func_array($router_item['page_callback'], $router_item['page_arguments']);
+      $messages = theme('status_messages');
+
+      print theme('modal', array('messages' => $messages, 'content' => $content));
+    }
+    else {
+      drupal_access_denied();
+    }
+  }
+  else {
+    drupal_not_found();
+  }
+}
+
+function theme_modal($variables) {
+  $messages = $variables['messages'];
+  $content = $variables['content'];
+  return $messages . $content;
+}
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function pco_modal_preprocess_node(&$vars) {
+  drupal_add_js(array('nid' => $vars['nid'], 'title' => $vars['title']), array('type' => 'setting', 'scope' => JS_DEFAULT));
+}

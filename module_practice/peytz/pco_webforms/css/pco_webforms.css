@@ -1,0 +1,62 @@
+
+#pco-webforms-webform-submissions-table-form .form-item,
+#pco-webforms-webform-submissions-table-form .container-inline-date .date-padding {
+  padding: 0;
+}
+
+#pco-webforms-webform-submissions-table-form .container-inline-date {
+  clear: none;
+}
+#pco-webforms-webform-submissions-table-form .container-inline-date .form-item-date-start {
+  float: left;
+}
+
+#pco-webforms-current-filters {
+  font-size: 11px;
+  line-height: 14px;
+  margin-bottom: 20px;
+}
+#pco-webforms-current-filters .current-filters-title,
+#pco-webforms-current-filters .current-filters-item span {
+  font-weight: bold;
+}
+#pco-webforms-current-filters .current-filters-item span {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+
+
+#blog-node-form #edit-field-webform-user-copy-email,
+#product-node-form #edit-field-webform-user-copy-email {
+  width: 700px;
+}
+#blog-node-form #edit-field-webform-user-copy-email-und:after,
+#product-node-form #edit-field-webform-user-copy-email-und:after {
+  content: ".";
+  display: block;
+  height: 0px;
+  clear: both;
+  visibility: hidden;
+}
+#blog-node-form #edit-field-webform-user-copy-email-und .form-item.form-type-checkbox,
+#product-node-form #edit-field-webform-user-copy-email-und .form-item.form-type-checkbox {
+  float: left;
+  width: 120px;
+  margin-right: 10px;
+  /*
+   *margin: 3px 10px 3px 0;
+   *padding: 0;
+   */
+}
+#blog-node-form #edit-field-webform-user-copy-email-und .form-item.form-type-checkbox input.form-checkbox,
+#product-node-form #edit-field-webform-user-copy-email-und .form-item.form-type-checkbox input.form-checkbox {
+  margin-left: 10px;
+}
+/*
+ *#product-node-form #edit-field-webform-user-copy-email-und .form-item.form-type-checkbox label {
+ *  display: block;
+ *  float: right;
+ *  width: 92px;
+ *}
+ */

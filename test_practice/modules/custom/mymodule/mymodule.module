@@ -1,0 +1,179 @@
+<?php
+/* menu_hook to create a page
+function mymodule_import_menu() {
+  $items = array();
+  $items['admin/config/module-import'] = array(
+    'title'       => 'Produse import',
+    'description' => 'Allows administrators to import',
+    'weight'      => -30,
+    'page callback'   => 'drupal_get_form',
+    'page arguments'  => array('mymodule_import_stuff'),
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/module-import/manage'] = array(
+    'title'       => 'Importing-produses',
+    'description' => 'Allows admins to manage import',
+    'page callback'   => 'drupal_get_form',
+    'page arguments'  => array('mymodule_import_stuff',),
+    'access callback' => TRUE,
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+/**
+* Main config form for importing products.
+
+function tm_importing_form() {
+  $config = variable_get('tm_importing_config',
+    array(
+      'selected' => 10,
+      'api_key' => '',
+      'product_search' => '',
+      'batch_step' => 5,
+    )
+  );
+
+  $options = array();
+  for ($i = 10; $i <= 500; $i = $i + 10) {
+    $options[$i] = $i;
+  }
+
+  $form = array();
+  $form['selected'] = array(
+    '#type'     => 'select',
+    '#title'    => t('Products to import'),
+    '#options'  => $options,
+    '#default_value' => $config['selected'],
+  );
+
+  $form['api_key'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('APIKEY'),
+    '#size'  => 20,
+    '#maxlength' => 128,
+    '#default_value' => $config['api_key'],
+    '#required' => TRUE,
+  );
+
+  $form['product_search'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('Product Name search'),
+    '#size'  => 20,
+    '#maxlength' => 128,
+    '#default_value' => $config['product_search'],
+    '#required' => TRUE,
+  );
+
+  $form['batch_step'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('Batch step'),
+    '#size'  => 20,
+    '#maxlength' => 128,
+    '#default_value' => $config['batch_step'],
+    '#validate' => t('tm_importing_form_validate'),
+    );
+
+  $form['save_config'] = array(
+    '#type'   => 'submit',
+    '#name'   => 'save_config',
+    '#value'  => t('Save config'),
+    '#weight' => 1,
+  );
+
+  $form['import'] = array(
+    '#type'   => 'submit',
+    '#name'   => 'import',
+    '#value'  => t('Import'),
+    '#weight' => 2,
+  );
+
+  return $form;
+}
+
+
+// menu callback function - sets up the batch
+function mymodule_import_stuff() {
+  $data = $form_state['values'];
+  $batch = array(
+    'title' => t('Node processing'),
+    'operations' => array(
+          array('tm_importing_add_products',  array($data))
+          ),
+    'finished'  => 'tm_importing_finished_batch',
+  );
+
+  batch_set($batch);
+  batch_process('admin/config/importing/manage');
+}
+
+// this is what runs multiple times per batch
+// progress and limit and is updated during each run
+function mymodule_import_stuff_process($progress, $limit, &$context) {
+ $url =file_get_contents('http://www.SupermarketAPI.com/api.asmx/COMMERCIAL_SearchByProductName?APIKEY='.$data["api_key"].'&ItemName='.$data["product_search"]);
+  $xml = simplexml_load_string($url);
+  $json = json_encode($xml);
+  $product_data = json_decode($json,TRUE);
+  $total_elements = count($product_data['Product_Commercial']);
+
+  if ($data['selected'] > $total_elements) {
+    $data['selected'] = $total_elements;
+  }
+  $product_selected = array();
+
+  for ($i=0; $i <$data['selected'] ; $i++) {
+    array_push($product_selected,$product_data['Product_Commercial'][$i]);
+  }
+
+  $limit = $data['selected']/$data['batch_step'];
+
+  if (empty($context['sandbox']['progress'])) {
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['max'] = $data['selected'];
+  }
+
+  if(empty($context['sandbox']['items'])) {
+    $context['sandbox']['items'] = $product_selected;
+  }
+
+  $counter = 0;
+  if(!empty($context['sandbox']['items'])) {
+
+    if ($context['sandbox']['progress'] != 0) {
+      array_splice($context['sandbox']['items'], 0, $limit);
+    }
+
+    foreach ($context['sandbox']['items'] as $entity) {
+
+      if ($counter != $limit) {
+
+        $query =
+
+        $counter++;
+        $context['sandbox']['progress']++;
+
+        $context['message'] = t('Now processing node %progress of %count',
+         array('%progress' => $context['sandbox']['progress'],
+         '%count' => $context['sandbox']['max']));
+        $context['results']['processed'] = $context['sandbox']['progress'];
+      }
+    }
+  }
+
+  if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
+      $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+  }
+}
+
+function mymodule_import_batch_finished($success, $results, $operations) {
+  if ($success) {
+      $message = format_plural(count($results), 'One post processed.', '@count posts processed.');
+  }
+  else {
+    $message = t('Finished with an error.');
+  }
+  drupal_set_message($message);
+}
+*/

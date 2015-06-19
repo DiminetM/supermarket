@@ -1,0 +1,68 @@
+/* @group Modal */
+
+#modal-overlay {
+	position: fixed;
+	z-index: 9999;
+	top: 0px;
+	left: 0px;
+	height: 100%;
+	width: 100%;
+	background: rgba(0,0,0,0.2);
+	display: none;
+}
+
+#modal-window {
+  position: absolute;
+  z-index: 9999;
+  display: none;
+  top: 50%;
+  left: 50%;
+  max-width: 540px;
+  background: rgb(255,255,255);
+}
+
+#modal-window #modal-inner {}
+
+#modal-window div.header {
+	position: relative;
+	height: 30px;
+	padding: 0 10px 10px;
+}
+
+#modal-window div.header a.close {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+}
+
+#modal-window div.modal-content {
+	padding: 0 10px 10px;
+	max-height: 500px;
+	overflow-y: scroll;
+}
+
+#modal-window .footer { padding: 0; margin: 0; padding: 0; border: 0; }
+
+#modal-window img {	display: block; }
+
+/* @end */
+/* @group Google Maps specifics */
+
+#map { width: 100%; height: 340px; }
+
+#message { 
+	z-index: 9999; 
+	position: absolute; 
+	padding: 10px;
+	width: 140px; 
+	border: 1px solid rgb(180,180,180);
+	background: rgb(255,255,255);
+	-webkit-border-radius: 2px;
+	-moz-border-radius: 2px;
+	border-radius: 2px;
+	-webkit-box-shadow: rgba(0,0,0,.2) 0 0 8px;
+	-mox-box-shadow: rgba(0,0,0,.2) 0 0 8px;
+	box-shadow: rgba(0,0,0,.2) 0 0 8px;
+}
+
+/* @end */

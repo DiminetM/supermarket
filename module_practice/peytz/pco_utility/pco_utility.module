@@ -1,0 +1,565 @@
+<?php
+/**
+ * @file
+ *   This is general utility module which is used for many backend/frontend settgins
+ *   on views, nodes, content types etc.
+ */
+
+/**
+ * Implements hook_menu_alter().
+ */
+function pco_utility_menu_alter(&$items) {
+  // Alter menu callback function for node reference autocomplete field.
+  $items['node_reference/autocomplete/%/%/%']['page callback'] = 'field_related_custom_autocomplete';
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function pco_utility_views_pre_render(&$view) {
+  global $language;
+  if (
+    $view->name == 'employees'
+  &&
+    in_array($view->current_display, array('single_employees', 'employees_list', 'employee_contact_person', 'panel_pane_1'))
+  ) {
+    if (!empty($view->result) && is_array($view->result)) {
+      if ($language->language == 'nb') {
+        foreach ($view->result as $item) {
+          if (!empty($item->field_field_job_title_no)) {
+            $item->field_field_job_title = $item->field_field_job_title_no;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Impliments hook_form_FORM_ID_alter().
+ */
+function pco_utility_form_node_form_alter(&$form, $form_state) {
+  global $language_content;
+
+  // Check if current content type has field_category
+  if (in_array($form['#node']->type, array('blog', 'case', 'product', 'webform'))) {
+    $form['field_category']['#prefix'] = '<div id="category-terms">';
+    $form['field_category']['#suffix'] = '</div>';
+    $form['field_category']['#id'] = 'edit-field-category';
+
+    $form['field_department']['#prefix'] = '<div id="department-terms">';
+    $form['field_department']['#suffix'] = '</div>';
+    $form['field_department']['#id'] = 'edit-field-department';
+    // Will be deleted after NO site version will have more employee.
+    $form['field_department'][$form['field_department']['#language']]['#multiple'] = FALSE;
+
+    $tr_lang = $form['#node']->language;
+
+    if (!isset($form['#node']->nid)) {
+      $tr_lang = $language_content->language;
+      $form['language']['#default_value'] = $tr_lang;
+
+      // Add ajax process for Select Language form field
+      $form['language']['#ajax'] = array(
+        'callback' => '_switch_taxonomy_category_terms_callback',
+        'wrapper' => 'node_blog_form_group_taxonomy_terms',
+        'effect' => 'fade',
+        'method' => 'replace',
+      );
+    }
+
+    if (!isset($form_state['values'])) {
+      _set_taxonomy_terms_options_on_entities($form, $tr_lang);
+    }
+  }
+  else {
+    if (!isset($form['#node']->nid)) {
+      $form['language']['#default_value'] = $language_content->language;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function pco_utility_field_widget_node_reference_autocomplete_form_alter(&$element, &$form_state, $context) {
+  // Check if isset key "nid" that meand that current element is a node reference field.
+  if (isset($element['nid'])) {
+    $element['nid']['#element_validate'] = array('field_related_custom_autocomplete_validation');
+    $element['nid']['#value_callback'] = 'field_related_custom_autocomplete_value';
+  }
+}
+
+/**
+ * Custom menu callback for the autocomplete results for field node reference (autocomplete).
+ */
+function field_related_custom_autocomplete($entity_type, $bundle, $field_name, $string = '') {
+  // Get all languages.
+  $installed_languages = language_list();
+
+  $field = field_info_field($field_name);
+  $instance = field_info_instance($entity_type, $field_name, $bundle);
+  $options = array(
+    'string' => $string,
+    'match' => $instance['widget']['settings']['autocomplete_match'],
+    'limit' => 10,
+    'node_fields' => array('nid', 'language'),
+  );
+
+  $references = node_reference_potential_references($field, $options);
+
+  $matches = array();
+  foreach ($references as $row) {
+    // Markup is fine in autocompletion results (might happen when rendered
+    // through Views) but we want to remove hyperlinks.
+    $suggestion = preg_replace(
+      '/<a href="([^<]*)">([^<]*)<\/a>/',
+      '$2',
+      $row['title'] . ' (' . $installed_languages[$row['language']]->native . ')'
+    );
+    // Add a class wrapper for a few required CSS overrides.
+    $matches[$row['title'] . ' (' . $installed_languages[$row['language']]->native . ') [nid:' . $row['nid'] . ']'] =
+      '<div class="reference-autocomplete">' . $suggestion . '</div>';
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * Custom validate function for autocomplete field for node related.
+ */
+function field_related_custom_autocomplete_validation($element, &$form_state, $form) {
+  $field = field_widget_field($element, $form_state);
+  $instance = field_widget_instance($element, $form_state);
+
+  $value = $element['#value'];
+  $nid = NULL;
+
+  if (!empty($value)) {
+    // Check whether we have an explicit "[nid:n]" input.
+    preg_match('/^(?:\s*|(.*) )?\[\s*nid\s*:\s*(\d+)\s*\]$/', $value, $matches);
+    if (!empty($matches)) {
+      // Explicit nid. Check that the 'title' part matches the actual title for
+      // the nid.
+      list(, $title, $nid) = $matches;
+      if (!empty($title)) {
+        $real_title = db_select('node', 'n')
+          ->fields('n', array('title'))
+          ->condition('n.nid', $nid)
+          ->execute()
+          ->fetchField();
+
+        // Check if real node title is the same with colected one in the autocomplete field
+        // ommiting node language for ex: Node title (Dansk)
+        if (!preg_match('/' . trim($real_title) . '/', $title)) {
+          form_error($element, t('%name: title mismatch. Please check your selection.', array('%name' => $instance['label'])));
+        }
+      }
+    }
+    else {
+      // No explicit nid (the submitted value was not populated by autocomplete
+      // selection). Get the nid of a referencable node from the entered title.
+      $options = array(
+        'string' => $value,
+        'match' => 'equals',
+        'limit' => 1,
+      );
+
+      $references = node_reference_potential_references($field, $options);
+      if ($references) {
+        // @todo The best thing would be to present the user with an
+        // additional form, allowing the user to choose between valid
+        // candidates with the same title. ATM, we pick the first
+        // matching candidate...
+        $nid = key($references);
+      }
+      else {
+        form_error($element, t('%name: found no valid post with that title.', array('%name' => $instance['label'])));
+      }
+    }
+  }
+
+  // Set the element's value as the node id that was extracted from the entered
+  // input.
+  form_set_value($element, $nid, $form_state);
+}
+
+/**
+ * Custom Value callback for a node_reference autocomplete element (node reference field).
+ * Replace the node nid with a node title and language.
+ */
+function field_related_custom_autocomplete_value($element, $input = FALSE, $form_state) {
+  if ($input === FALSE) {
+    // We're building the displayed 'default value': expand the raw nid into
+    // "node title (Language name) [nid:n]".
+
+    // Get all languages.
+    $installed_languages = language_list();
+
+    $nid = $element['#default_value'];
+    if (!empty($nid)) {
+      $q = db_select('node', 'n');
+      $node_title_alias = $q->addField('n', 'title');
+      $node_title_alias = $q->addField('n', 'language');
+      $q->addTag('node_access')
+        ->condition('n.nid', $nid)
+        ->range(0, 1);
+      $result = $q->execute();
+      // @todo If no result (node doesn't exist or no access).
+      // Get data from query where is stored node title and language.
+      $obj = $result->fetchAssoc();
+      $value = $obj['title'] .' (' . $installed_languages[$obj['language']]->native . ') [nid:' . $nid . ']';
+      return $value;
+    }
+  }
+}
+
+/**
+ * Custom function for seting new options for taxnomy entities using collected terms.
+ * @param string $node_language
+ *   Current selected language
+ * @param array $form
+ *   The entire form
+ */
+function _set_taxonomy_terms_options_on_entities(&$form, $node_language) {
+  global $language_content;
+  $tr_lang = $language_content->language;
+
+  if (!isset($form['#node']->nid)) {
+    $tr_lang = $node_language;
+    $node_language = 'und';
+
+    if (
+      isset($_GET['translation']) && !empty($_GET['translation'])
+    &&
+      isset($_GET['target']) && !empty($_GET['target'])
+    ) {
+      $node_language = $_GET['target'];
+    }
+  }
+
+  foreach ($form['field_category'][$node_language]['#options'] as &$op) {
+    $op = t($op, array(), array('langcode' => $tr_lang));
+  }
+
+  foreach ($form['field_department'][$node_language]['#options'] as &$op) {
+    $op = t($op, array(), array('langcode' => $tr_lang));
+  }
+}
+
+/**
+ * Custom callback for node edit form language switcher ajax.
+ */
+function _switch_taxonomy_category_terms_callback($form, &$form_state) {
+  // Ajax process
+  if (isset($form_state['values']) && !isset($form['#node']->nid)) {
+    _set_taxonomy_terms_options_on_entities($form, $form_state['values']['language']);
+  }
+
+  $commands = array(
+    ajax_command_replace('#category-terms', render($form['field_category'])),
+    ajax_command_replace('#department-terms', render($form['field_department']))
+  );
+
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function pco_utility_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'views_content_views_panes_content_type_edit_form':
+      $displays = array('employees-single_employees', 'employees-employees_az', 'employees-employees_list');
+      if (in_array($form_state['subtype_name'], $displays)) {
+        $field_office = field_info_field('field_office');
+        $offices = list_allowed_values($field_office);
+        $form['arguments']['field_office_value']['#type'] = 'checkboxes';
+        $form['arguments']['field_office_value']['#options'] = $offices;
+        $form['arguments']['field_office_value']['#default_value'] = explode(',', $form['arguments']['field_office_value']['#default_value']);
+        $form['arguments']['field_office_value']['#description'] = '';
+        $form['#submit'][] = '_custom_submit_field_office';
+
+        $description = t('Add user id (ids) to be excluded from list. Example: 41, 173');
+        $form['arguments']['uid']['#title'] = t($form['arguments']['uid']['#title']);
+        $form['arguments']['uid']['#description'] = $description;
+      }
+      break;
+    case 'user_profile_form':
+      drupal_add_js(drupal_get_path('module', 'pco_utility') . '/js/pco_utility.js', 'file');
+      // Will be deleted after NO site version will have more employee.
+      global $language;
+      if ($language->language != 'nb') {
+        $form['field_department'][$form['field_department']['#language']]['#multiple'] = FALSE;
+      }
+
+      $form['#validate'][] = '_user_phone_prefix_field_validate';
+      break;
+  }
+}
+
+/**
+ * Custom submit for office field in panel view's settings.
+ */
+function _custom_submit_field_office($form, &$form_state) {
+  $form_state['conf']['arguments']['field_office_value'] = implode(',', array_filter($form_state['conf']['arguments']['field_office_value'], 'is_string'));
+}
+
+/**
+ * Custom user edit form validate for phone prefix fields.
+ */
+function _user_phone_prefix_field_validate($form, &$form_state) {
+  $work_num = $form_state['values']['field_work_number']['und'][0]['value'];
+  $mobile_num = $form_state['values']['field_mobile_number']['und'][0]['value'];
+  $work_num_cc = $form_state['values']['field_work_number_country_code']['und'][0]['value'];
+  $mobile_num_cc = $form_state['values']['field_mobile_number_country_code']['und'][0]['value'];
+
+  if ($work_num && empty($work_num_cc)) {
+    form_error($form['field_work_number_country_code'], t('!name1 and !name2 fields are both required.',
+      array(
+        '!name1' => $form['field_work_number'][$form['field_work_number']['#language']]['#title'],
+        '!name2' => $form['field_work_number_country_code'][$form['field_work_number_country_code']['#language']]['#title'],
+      ))
+    );
+  }
+
+  if ($work_num_cc && empty($work_num)) {
+    form_error($form['field_work_number'], t('!name1 and !name2 fields are both required.',
+      array(
+        '!name1' => $form['field_work_number'][$form['field_work_number']['#language']]['#title'],
+        '!name2' => $form['field_work_number_country_code'][$form['field_work_number_country_code']['#language']]['#title'],
+      ))
+    );
+  }
+
+  if ($mobile_num && empty($mobile_num_cc)) {
+    form_error($form['field_mobile_number_country_code'], t('!name1 and !name2 fields are both required.',
+      array(
+        '!name1' => $form['field_mobile_number'][$form['field_mobile_number']['#language']]['#title'],
+        '!name2' => $form['field_mobile_number_country_code'][$form['field_mobile_number_country_code']['#language']]['#title'],
+      ))
+    );
+  }
+
+  if ($mobile_num_cc && empty($mobile_num)) {
+    form_error($form['field_mobile_number'], t('!name1 and !name2 fields are both required.',
+      array(
+        '!name1' => $form['field_mobile_number'][$form['field_mobile_number']['#language']]['#title'],
+        '!name2' => $form['field_mobile_number_country_code'][$form['field_mobile_number_country_code']['#language']]['#title'],
+      ))
+    );
+  }
+}
+
+/**
+ * Implementation of hook_node_load().
+ *
+ * @param type $nodes
+ *   An array of nodes are loaded in current viewed page
+ * @param type $types
+ *   An array of node types are loaded in current viewed page
+ */
+function pco_utility_node_load($nodes, $types) {
+  if (count(array_intersect(array('blog', 'product', 'webform', 'case', 'job'), $types))) {
+    $real_url = drupal_lookup_path('source', $_GET['q']);
+    if ($real_url != '') {
+      $current_nid = str_replace('node/', '', $real_url);
+    }
+    else {
+      $current_nid = arg(1);
+    }
+
+    foreach ($nodes as $nid => $node) {
+      if ($current_nid == $nid) {
+        if (
+          isset($node->field_related_contact_persons)
+        &&
+          !empty($node->field_related_contact_persons)
+        ) {
+          // Get all related users assigned to current viewed node
+          // and register them as array of user ids into global variable
+          $contact_person_view_arg = array();
+          foreach ($node->field_related_contact_persons['und'] as $val) {
+            $contact_person_view_arg[] = $val['uid'];
+          }
+          $GLOBALS['contact_person_view_arg'] = $contact_person_view_arg;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_views_query_alter().
+ *
+ * @global type $contact_person_view_arg
+ *   Global array taken from hook_node_load() preprocess with all uids
+ * @param type $view
+ *   View object
+ * @param type $query
+ *   Query object which includes conditions, fields, tables
+ */
+function pco_utility_views_query_alter(&$view, &$query) {
+  if ($view->name == 'employees') {
+    global $contact_person_view_arg;
+    global $language;
+
+    switch ($view->current_display) {
+      case 'panel_pane_1':
+      case 'panel_pane_3':
+        // Set custom condition in case there are related users to the current viewed node.
+        if (isset($contact_person_view_arg) && !empty($contact_person_view_arg)) {
+          _set_view_custom_condition($query, $contact_person_view_arg, $view->current_display);
+          unset($GLOBALS['contact_person_view_arg']);
+        }
+        break;
+      case 'employee_contact_person':
+        // Display only users from current node department and who are checked to
+        // displayed on the current domain
+        _set_view_custom_condition($query, array($language->language), $view->current_display);
+        break;
+    }
+  }
+}
+
+/**
+ * Custom function for setting custom query conditions.
+ * @param Object $query
+ *   Entire query object
+ * @param Mixed $value
+ *   An array or a string of value/values
+ * @param String $current_display
+ *   A string (current view display)
+ */
+function _set_view_custom_condition(&$query, $value, $current_display) {
+  $field = 'users.uid';
+  if ($current_display == 'employee_contact_person') {
+    $field = 'field_data_field_show_contact_person.field_show_contact_person_value';
+  }
+  _custom_query_condition_set($query, $value, $field);
+}
+
+/**
+ * Custom query conditions process.
+ * @param Object $query
+ *   Query object
+ * @param String $field
+ *   String, Field name which will be processed
+ * @param Array $value
+ *   An array with values
+ */
+function _custom_query_condition_set(&$query, $value, $field) {
+  foreach ($query->where as &$condition_group) {
+    foreach ($condition_group['conditions'] as &$condition) {
+      if ($condition['field'] == $field) {
+        $condition['value'] = $value;
+        $condition['operator'] = 'in';
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_url_inbound_alter().
+ */
+function pco_utility_url_inbound_alter(&$path, $original_path, $path_language) {
+  global $language;
+  $path_exploded = explode('/', $path);
+  $original_path_exploded = explode('/', $original_path);
+
+  if (
+    $path_exploded[0] == 'user'
+  &&
+    (isset($path_exploded[1]) && is_numeric($path_exploded[1]))
+  &&
+    $original_path_exploded[0] == 'medarbejdere'
+  &&
+    $language->language == 'nb'
+  ) {
+    $new_alias = 'medarbeidere/' . $original_path_exploded[1];
+    if (drupal_lookup_path('alias', $new_path)) {
+      return;
+    }
+
+    $path_config = array(
+      'source' => $path,
+      'alias' => $new_alias,
+      'language' => $language->language,
+    );
+    path_save($path_config);
+
+    drupal_goto($new_alias);
+  }
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function pco_utility_token_info() {
+  $info['tokens']['node']['node_og_image'] = array(
+    'name' => t('Open Graph Image url'),
+    'description' => t('This is node\'s Open Graph image url value.'),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ * Add custom token for Open Graph metatags image url.
+ */
+function pco_utility_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  global $base_root;
+  if ($type == 'node') {
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'node_og_image':
+          // Set default Open Graph image url theme's logo.
+          $og_image_url = $base_root . '/' . drupal_get_path('theme', 'air') . '/logo.png';
+
+          if ($type == 'node' && !empty($data['node'])) {
+            $node = $data['node'];
+            // Check if current node has set Gallery image field then override
+            // Open Graph image url with node's one.
+            if (isset($node->field_image_gallery) && !empty($node->field_image_gallery)) {
+              $image_uri = $node->field_image_gallery[$node->language][0]['uri'];
+              $og_image_url = file_create_url($image_uri);
+            }
+            // Put image url in replacements array.
+            $replacements[$original] = $og_image_url;
+          }
+        break;
+      }
+    }
+  }
+
+  // Make replacement in frontend.
+  if ($created_tokens = token_find_with_prefix($tokens, 'node_og_image')) {
+    $replacements += token_generate('node', $created_tokens, array('node' => $node->node_og_image), $options);
+  }
+
+  return $replacements;
+}
+
+/**
+ * Implements hook_init().
+ */
+function pco_utility_init() {
+  $arg_0 = arg(0);
+  $arg_1 = arg(1);
+  $arg_2 = arg(2);
+  global $language;
+  if ($arg_0 == 'user' && $arg_2 != 'edit') {
+    if (isset($arg_1) && is_numeric($arg_1) ) {
+      $user = user_load($arg_1);
+      if ($user->field_show_profile_on_site['und'][0]['value'] == 0) {
+        if ($language->language == 'da') {
+          drupal_goto('medarbejdere');
+        }
+        if ($language->language == 'nb') {
+          drupal_goto('medarbeidere');
+        }
+      }
+    }
+  }
+}

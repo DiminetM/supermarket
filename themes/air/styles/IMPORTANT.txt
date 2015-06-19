@@ -1,0 +1,50 @@
+UPDATE - Wed Mar 13 09:57:40 CET 2013
+
+I(tg@peytz.dk) have updated the way this project works 
+with LESS.
+
+Previously this project used the Drupal module 
+'LESS CSS Preprocessor' to process LESS files.
+- http://drupal.org/node/1807852
+
+For consistancy with other Peytz projects and to make it 
+easier for future developers to work with, I have moved 
+away from a module based approach. 
+
+The /styles folder is now structured to enable developers 
+to compile the CSS using desktop apps (See below).
+
+The side effect off this change is that the 'new' .LESS 
+files have a 'classic' .CSS structure. (eg: If you look 
+in the .less files you will not see any LESS style nesting)!
+
+Note that future developers CAN use LESS nesting, variables, 
+mixins and functions as per normal.
+
+
+Important information about stylesheets:
+========================================
+
+EVERYTHING IN STYLES/CSS ARE VOLATILE!
+
+All styles for the Air theme are generated 
+via LESS. Because of this, all changes to to the CSS 
+folder is bound to be overridden at some point.
+
+You should only do CSS changes to LESS files (*.less) in 
+the styles/less folder, and compile the result into 
+styles/css.
+
+NEVER (!!) UNDER ANY CIRCUMSTANCE, SHOULD YOU CHANGE 
+ANYTHING IN STYLES/CSS BY HAND. EVER!
+
+Recommend using a LESS app for this task, and there are 
+several. PCO recommends the first one for OS X:
+
+OS X:                     http://incident57.com/less/
+OS X, Windows & Linux:    http://wearekiss.com/simpless
+
+Have fun coding CSS with variables, mixins and functions!
+
+Tom Grinsted
+Peytz & Co.

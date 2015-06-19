@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz FB likebox feature.
+ */
+
+include_once 'peytz_fb_likebox.features.inc';

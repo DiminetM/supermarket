@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ *
+ * It simply tells panels where to find the .inc files that define various
+ * args, contexts, content_types. In this case the subdirectories of
+ * ctools_plugin_example/panels are used.
+ */
+function pco_site_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/$plugin";
+  }
+}
+
+/**
+ * Implementation of hook_twitter_pull_blocks().
+ */
+function pco_site_twitter_pull_blocks() {
+  return array(
+    0 => (object) array(
+      'delta' => 'pco_site_0',
+      'tweetkey' => '@Peytz',
+      'title'  => 'Peytz på Twitter',   
+      'name' => 'Peytz twitter feed',
+      'number_of_items' => 3,
+    )
+  );
+ 
+}
+
+/**
+ * Hide all format options for comments.
+ */
+function pco_site_form_comment_form_alter(&$form, &$form_state, &$form_id) {
+  // Unset preview button
+  unset($form['actions']['preview']);
+  $form['comment_body']['#after_build'][] = 'pco_site_customize_comment_form';
+}
+
+function pco_site_customize_comment_form(&$form) { 
+  $form[LANGUAGE_NONE][0]['format']['#access'] = FALSE; // Note LANGUAGE_NONE, you may need to set your comment form language code instead   
+  return $form; 
+} 
+
+function pco_site_form_search_block_form_alter(&$form, &$form_state, $form_id) {
+  unset($form['search_block_form']['#title_display']);
+}
+
+/**
+* Implements hook_image_default_styles().
+*/
+function pco_site_image_default_styles() {
+  $styles = array();
+  $styles['image_12col'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale_and_crop',
+        'data' => array('width' => 630, 'height' => 180, 'upscale' => 1),
+        'weight' => 0,
+      ),
+    )
+  );  
+  $styles['image_10col'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale',
+        'data' => array('width' => 520, 'upscale' => 1),
+        'weight' => 0,
+      ),
+    )
+  );  
+  $styles['image_09col'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale_and_crop',
+        'data' => array('width' => 465, 'height' => 279, 'upscale' => 1),
+        'weight' => 0,
+      ),
+    )
+  );    
+  $styles['image_07col'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale_and_crop',
+        'data' => array('width' => 360, 'height' => 216, 'upscale' => 1),
+        'weight' => 0,
+      ),
+    )
+  );  
+  $styles['image_06col'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale_and_crop',
+        'data' => array('width' => 300, 'height' => 180, 'upscale' => 1),
+        'weight' => 0,
+      ),
+    )
+  );
+  $styles['73x43'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale_and_crop',
+        'data' => array('width' => 73, 'height' => 43, 'upscale' => 1),
+        'weight' => 0,
+      ),
+    )
+  );
+
+  return $styles;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function pco_site_field_formatter_info() {
+  return array(
+    'pco_site_phonenumber' => array(
+      'label' => t('Phone number'),
+      'field types' => array('number_integer'),
+      'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+    ),
+  );
+}
+ 
+/**
+ * Implements hook_field_formatter_view().
+ */
+function pco_site_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  
+  switch ($display['type']) {
+    case 'pco_site_phonenumber':
+      foreach ($items as $delta => $item) {
+        $output = substr($item['value'], 0, 4) . ' ' . substr($item['value'], 4, 4);
+        $prefixes = isset($instance['settings']['prefix']) ? array_map('field_filter_xss', explode('|', $instance['settings']['prefix'])) : array('');
+        $suffixes = isset($instance['settings']['suffix']) ? array_map('field_filter_xss', explode('|', $instance['settings']['suffix'])) : array('');
+        $prefix = (count($prefixes) > 1) ? format_plural($item['value'], $prefixes[0], $prefixes[1]) : $prefixes[0];
+        $suffix = (count($suffixes) > 1) ? format_plural($item['value'], $suffixes[0], $suffixes[1]) : $suffixes[0];
+        $output = $prefix . $output . $suffix;
+        $element[$delta] = array('#markup' => $output);
+      }
+    
+      break;
+  }
+  
+  return $element;
+}

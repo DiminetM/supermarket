@@ -1,0 +1,639 @@
+/**
+ * @file
+ * Stylesheet for Views
+ *
+ * This file is intended for styles specific to
+ * the Views module.
+ *
+ */
+
+/* Import LESS files */
+@import url('radius.less');
+
+div.view {}
+
+/* @group view-departments */
+
+div.view.view-departments {}
+
+div.view.view-departments .views-row {
+	float: left;
+	margin: 0;
+	padding: 0 1.5625%; /* 15 / 960 */
+	width: 31.25%; /* 300 / 960 */
+}
+
+div.view.view-departments .views-row.views-row-1 {
+	padding: 0 1.5625% 0 0;
+}
+
+div.view.view-departments .views-row.views-row-3 {
+	padding: 0 0 0 1.5625%;
+}
+
+div.view.view-departments .views-row.views-row-4 {
+	padding: 0 1.5625% 0 0;
+}
+
+div.view.view-departments .views-row.views-row-6 {
+	padding: 0 0 0 1.5625%;
+}
+
+/* @end */
+/* @group view-employees */
+
+.node-type-product .contact-person .view-employees {
+  .view-header {
+    display: none;
+  }
+
+  div.views-row {
+    width: 100%;
+
+    > div {
+      padding: 137px 0 0;
+      height: 100%;
+    }
+
+    .views-field {
+      padding-left: 10px;
+    }
+
+    .views-field-picture {
+      text-align: right;
+      border-bottom: 1px solid rgb(234,234,234);
+      height: 49.7%;
+      position: absolute;
+      top: 0;
+      width: 96.7%;
+    }
+
+    img {
+      position: relative;
+    }
+  }
+}
+
+div.view.view-employees {}
+
+div.view.view-employees div.views-row {
+	float: left;
+	margin: 0 4.0540541% 20px 0;
+	width: 47.972973%; /* 355 / 740 */
+}
+
+.column.seven div.view.view-employees div.views-row {
+  width: 100%;
+}
+
+div.view.view-employees div.views-row > div {
+  position: relative;
+  padding: 8px 2% 0 45.0704225%;  /* 160 / 355 */
+  min-height: 136px;
+  font-size: .928571429em;
+  line-height: 1.5em;
+  color: rgb(120,120,120);
+  border: 1px solid rgb(234,234,234);
+}
+
+div.view.view-employees div.views-row.views-row-even {
+	margin: 0 0 20px 0;
+}
+
+div.view.view-employees div.views-row img {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	max-width: 136px;
+	max-height: 100%;
+}
+
+div.view.view-employees div.views-row div.views-field-field-office {
+  color: rgb(170, 170, 170);
+}
+
+div.view.view-employees div.views-row div.views-field-field-name {
+	font-family: NewsGothicBT-Bold, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+	font-size: 1.285714286em;
+	line-height: 1.5em;
+}
+
+div.view.view-employees div.views-row div.views-field-field-job-title {
+	color: rgb(38,38,38);
+}
+
+div.view.view-employees div.views-row div.views-field-field-name,
+div.view.view-employees div.views-row div.views-field-field-job-title,
+div.view.view-employees div.views-row div.views-field-field-work-number,
+div.view.view-employees div.views-row div.views-field-field-mobile-number {
+  position: relative;
+  z-index: 100;
+}
+
+/* @end */
+/* @group view-slideshow-frontpage */
+
+section.panel-pane div.view-slideshow-frontpage ul,
+section.panel-pane div.view-slideshow-frontpage ul li {
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+
+section.panel-pane div.view-slideshow-frontpage {
+	position: relative;
+	width: 100%;
+}
+
+section.panel-pane div.view-slideshow-frontpage div.view-content {
+  padding: 0 0 31%;
+}
+
+section.panel-pane div.view-slideshow-frontpage div.view-content ul li {
+	position: absolute;
+	overflow: hidden;
+	top: 0;
+	left: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+	z-index: 10;
+	background: rgb(38,38,38);
+}
+
+section.panel-pane div.view-slideshow-frontpage div.view-content ul li img {
+  display: block;
+  position: relative;
+  top: -50px;
+  max-width: 100%;
+}
+
+div.view-slideshow-frontpage div.views-field-field-image-gallery {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 5;
+}
+
+div.block-system .content > header div.view-slideshow-frontpage h1,
+div.block-system .content .contextual-links-region > header div.view-slideshow-frontpage h1 {
+	position: absolute;
+	left: 3.125%;
+	bottom: 20%;
+	z-index: 10;
+	max-width: 90%; /* 800 / 960 */
+	width: auto;
+	word-wrap: break-word;
+	font: normal 3.428571429em/1.2em NewsGothicBT-Roman, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+}
+
+div.view-slideshow-frontpage h1 a {
+	color: rgb(255,255,255);
+}
+
+div.view-slideshow-frontpage h1 a:hover { text-decoration: none; }
+
+div.view-slideshow-frontpage h1 strong {
+	font-family: NewsGothicBT-Bold, "Arial Narrow", Helvetica Neue, Arial, sans-serif;
+	font-weight: normal;
+}
+
+div.view-slideshow-frontpage h1 span {
+	float: left;
+	clear: left;
+	display: block;
+	padding: 0 10px;
+	background: rgba(255,114,0,.8);
+}
+
+div.view-slideshow-frontpage h1 a:hover span { background: rgba(255,130,0,.8); }
+
+div.view-slideshow-frontpage div.actions {
+	position: absolute;
+	left: 3.125%;
+	bottom: 10%;
+}
+
+div.view-slideshow-frontpage div.actions a.button {
+  background-color: rgba(255,114,0,.80);
+}
+
+div.view-slideshow-frontpage div.actions a.button:hover {
+  background-color: rgb(255,130,0);
+}
+
+/* @group slide-nav & progress */
+
+div.pane-slideshow-frontpage-panel-pane-1 {	position: relative; }
+
+section.panel-pane > .pane-content div.view-slideshow-frontpage .item-list > ul {
+  border: none;
+}
+
+section.panel-pane ul#slide-nav {
+	position: absolute;
+	bottom: -20px;
+	left: 0;
+	display: block;
+	z-index: 101;
+	width: 100%;
+	border: none;
+}
+
+section.panel-pane ul#slide-nav li {
+	display: block;
+	width: 30px;
+	height: 20px;
+	border: none;
+	.border-radius-bottom(3px);
+	background: #f06c22;
+}
+
+section.panel-pane ul#slide-nav li:hover { background: rgb(255,153,0); }
+
+section.panel-pane ul#slide-nav li.next {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+section.panel-pane ul#slide-nav li.left {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+section.panel-pane ul#slide-nav li a {
+	display: block;
+	overflow: hidden;
+	width: 30px;
+	height: 20px;
+	text-indent: -9999px;
+	background-image: url(../../images/icons.png);
+	background-position: -3px -78px;
+	background-repeat: no-repeat;
+}
+
+section.panel-pane ul#slide-nav li.prev a {	background-position: -3px -78px; }
+
+section.panel-pane ul#slide-nav li.next a {	background-position: -3px -153px; }
+
+section.panel-pane ul#slide-progress {
+	position: absolute;
+	bottom: -22px;
+	left: 15%;
+	z-index: 102;
+	height: 20px;
+	text-align: center;
+	width: 70%;
+	border: none;
+}
+
+section.panel-pane ul#slide-progress li {
+	margin: 0 4px;
+	display: inline;
+	border: none;
+}
+
+section.panel-pane ul#slide-progress li a {
+	display: inline-block;
+	overflow: hidden;
+	text-indent: -9999px;
+	width: 10px;
+	height: 10px;
+	text-decoration: none;
+	background: rgb(204,204,204);
+}
+
+section.panel-pane ul#slide-progress li.active a {
+	background: #f06c22;
+}
+
+/* @end */
+/* @end */
+/* @group view-blog */
+
+div.view ul li > div.content {
+  overflow: hidden;
+  padding: 15px 0;
+  font-size: 1em;
+  line-height: 1.5em;
+  color: rgb(60,60,60);
+}
+
+div.view ul li > div.content h2 {
+  margin: 0 0 5px -1px;
+  padding: 0;
+  font: normal 1.285714286em/1em NewsGothicBT-Bold,Arial, sans-serif;
+}
+
+div.view ul li > div.content p {
+  margin: 0;
+  padding: 0;
+}
+
+div.view ul li > div.content div.meta {
+  margin: 0 0 5px -2px;
+}
+
+section.panel-pane div.attachment > div.view ul {
+  border: none;
+}
+
+div.attachment > div.view ul li {
+  clear: both;
+  overflow: hidden;
+  margin: 0 0 20px;
+  border-width: 1px 0 1px 0;
+  border-style: solid;
+  border-color: rgb(234,234,234);
+}
+
+section.panel-pane div.attachment > div.view div.image {
+  width: 47.6190476%; /* 300 / 630 */
+}
+
+section.panel-pane div.attachment > div.view div.image,
+section.panel-pane div.attachment > div.view div.image a,
+section.panel-pane div.attachment > div.view div.image div,
+section.panel-pane div.attachment > div.view div.image img {
+  display: block;
+  float: left;
+}
+
+section.panel-pane div.attachment > div.view div.image a,
+section.panel-pane div.attachment > div.view div.image div,
+section.panel-pane div.attachment > div.view div.image img {
+  width: 100%;
+}
+
+section.panel-pane div.attachment > div.view div.image img {
+  display: block;
+  float: left;
+  width: 100%;
+}
+
+section.panel-pane div.attachment > div.view div.content {
+  padding: 4.7619048% 4.7619048% 0; /* 30 / 630 */
+  font-size: 1em;
+}
+
+section.panel-pane div.attachment > div.view ul li.no-image div.content {
+  padding: 15px 0;
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1.no-image div.content {
+  color: rgb(14,14,14);
+  background: rgb(255,255,255);
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1.no-image > div.content div.meta {
+  color: rgb(106,106,106);
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1.no-image > div.content div.meta a {
+  color: #f06c22;
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1.no-image > div.content div.meta a:hover {
+  color: rgb(255,153,0);
+}
+
+
+section.panel-pane div.attachment > div.view h2 {
+  font: 1.5em/1em NewsGothicBT-Bold,Arial, sans-serif;
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1 {
+  background: rgb(42,42,42);
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1 > div.content {
+  color: rgb(255,255,255);
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1 > div.content div.meta,
+section.panel-pane div.attachment > div.view ul li.views-row-1 > div.content div.meta a {
+  color: rgb(255,255,255);
+}
+
+section.panel-pane div.attachment > div.view ul li.views-row-1 > div.content div.meta a:hover {
+  text-decoration: underline;
+}
+
+/* @end */
+/* @group view-testimonials.view-display-id-panel_pane_2 */
+
+div.view-testimonials.view-display-id-panel_pane_2 {
+  position: relative;
+  padding: 9%;
+  font-size: .857142857em;
+  line-height: 1.5em;
+  color: rgb(106,106,106);
+  text-align: right;
+  border: 1px solid rgb(234,234,234);
+}
+
+div.view-testimonials.view-display-id-panel_pane_2 div.views-field-body {
+  text-align: left;
+  margin: 0 0 5px;
+  color: rgb(14,14,14);
+  font: italic 1.166666667em/1.5em Georgia, Times, "Times New Roman", serif;
+}
+
+div.view-testimonials.view-display-id-panel_pane_2 .view-content:before {
+  content: "“";
+  position: absolute;
+  top: -21px;
+  left: 15px;
+  padding: 0 10px 0 0;
+  color: #eaeaea;
+  font: italic 5.142857143em/80px Georgia, Times, "Times New Roman", serif;
+  background: #ffffff;
+}
+div.view-testimonials.view-display-id-panel_pane_2 .view-content:after {
+  content: "”";
+  position: absolute;
+  bottom: -60px;
+  right: 15px;
+  padding: 0 10px 0 0;
+  color: #eaeaea;
+  font: italic 5.142857143em/80px Georgia, Times, "Times New Roman", serif;
+  background: #ffffff;
+}
+div.view-testimonials.view-display-id-panel_pane_2 div.field-content {
+  position: relative;
+  z-index: 200;
+}
+/* @end */
+/* @group view-morgeninspiration */
+.view-morgeninspiration {
+  font-size: 14px;
+  .views-row {
+    width: 300px;
+    -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+
+
+    .views-field:not(.views-field-field-image-gallery){
+      padding: 0 15px;
+      color: #fff;
+
+      &.views-field-title a {
+        font: 1.5em/1.2em NewsGothicBT-Bold, "Arial Narrow", Helvetica, Arial, sans-serif;
+        color: #fff;
+      }
+    }
+
+    &.orange {
+      background: #f06c22;
+      color: #fff;
+
+      .views-field-field-dato-for-event {
+        color:#2A2A2A;
+      }
+
+    }
+
+    &.gray {
+      background: #2A2A2A;
+
+      .views-field-body {
+        padding-bottom: 20px;
+      }
+
+      &:before {
+        content: attr(data-cta-msg);
+        background: #f06c22;
+        width: 50%;
+        position: absolute;
+        padding: 5px 10px;
+        bottom: 0;
+        right: 0;
+        color: #fff;
+      }
+
+      .views-field-field-dato-for-event {
+        color: #f06c22;
+      }
+
+      .views-field-title a {
+        font: 1.5em/1.2em NewsGothicBT-Bold, "Arial Narrow", Helvetica, Arial, sans-serif;
+        color: #f06c22;
+      }
+    }
+  }
+}
+/* @group view-employees-product-page */
+#mini-panel-cp_productpage_graybox .node-type-product .contact-person .view-employees .view-header {
+  display: block;
+}
+#mini-panel-cp_productpage_graybox .node-type-product .contact-person .view-employees div.views-row {
+  width: auto;
+}
+#mini-panel-cp_productpage_graybox .node-type-product .contact-person .view-employees div.views-row > div {
+  padding: 0;
+  height: auto;
+  min-height: 1.5em;
+}
+#mini-panel-cp_productpage_graybox .node-type-product .contact-person .view-employees div.views-row .views-field {
+  padding-left: 10px;
+}
+#mini-panel-cp_productpage_graybox .node-type-product .contact-person .view-employees div.views-row .views-field-picture {
+  text-align: right;
+  border-bottom: 1px solid #eaeaea;
+  height: auto;
+  width: auto;
+  position: absolute;
+  top: 0;
+}
+#mini-panel-cp_productpage_graybox .node-type-product .contact-person .view-employees div.views-row img {
+  position: relative;
+}
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row {
+  min-height: 1.5em;
+  margin: 0;
+  width: auto;
+}
+#mini-panel-cp_productpage_graybox .column.seven div.view.view-employees div.views-row {
+  width: 100%;
+}
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row > div {
+  position: relative;
+  padding: 0;
+  min-height: 1.5em;
+  color: #787878;
+  border: 1px solid #eaeaea;
+}
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row.views-row-even {
+  margin: 0;
+}
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row img {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  max-width: none;
+  max-height: none;
+}
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row div.views-field-field-name {
+  font-size: 1.285714286em;
+  line-height: 1em;
+}
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row div.views-field-field-name,
+#mini-panel-cp_productpage_graybox div.view.view-employees div.views-row div.views-field-field-job-title {
+  padding-right: 10px;
+  float: left;
+}
+
+/* @group view-morgeninspiration */
+.view-morgeninspiration {
+  font-size:14px;
+  position: relative;
+
+  .views-row {
+    width:300px;
+    -moz-box-sizing:border-box;
+    -webkit-box-sizing:border-box;
+    box-sizing:border-box;
+
+    .views-field:not(.views-field-field-image-gallery) {
+      padding:0 15px;
+      color:#ffffff;
+    }
+
+    .views-field:not(.views-field-field-image-gallery).views-field-title a {
+      font:1.5em/1.2em NewsGothicBT-Bold, "Arial Narrow", Helvetica, Arial, sans-serif;
+      color:#ffffff;
+    }
+  }
+  .views-row.orange {
+    background:#f06c22;
+    color:#ffffff;
+    .views-field-field-dato-for-event {
+      color:#2a2a2a;
+    }
+  }
+  .views-row.gray {
+    background:#2a2a2a;
+    .views-field-body {
+      padding-bottom:20px;
+    }
+    .views-field-field-dato-for-event {
+      color:#f06c22;
+    }
+    .views-field-title a {
+      font:1.5em/1.2em NewsGothicBT-Bold, "Arial Narrow", Helvetica, Arial, sans-serif;
+      color:#f06c22;
+    }
+  }
+  .views-row.gray:before {
+    content:attr(data-cta-msg);
+    background:#f06c22;
+    width:50%;
+    position:absolute;
+    padding:5px 10px;
+    bottom:0;
+    right:0;
+    color:#ffffff;
+  }
+}
+/* @end */

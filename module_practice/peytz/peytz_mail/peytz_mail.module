@@ -1,0 +1,363 @@
+<?php
+/**
+ * @file
+ * Peytz Mail API module.
+ * @author Christian Nikolajsen <cn@peytz.dk>
+ * @author Alex Oroshchuk <ao@peytz.dk>
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function peytz_mail_menu() {
+  $items = array();
+
+  // Administration pages.
+  $items['admin/config/peytz_mail'] = array(
+    'title' => 'Peytz Mail API',
+    'description' => 'Configure Peytz Mail API.',
+    'position' => 'right',
+    'weight' => -20,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/peytz_mail/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Settings for the Peytz Mail API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('peytz_mail_settings_form'),
+    'access arguments' => array('administer peytz mail settings'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'peytz_mail.admin.inc',
+//    'file' => 'mailer/PeytzMailer.class.php',
+  );
+
+  // Sync error management.
+  $items['admin/config/peytz_mail/syncerrors'] = array(
+    'title' => 'Synchronization',
+    'description' => 'View failed requests details.',
+    'page callback' => 'peytz_mail_admin_syncerrors',
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 3,
+    'file' => 'peytz_mail.admin.inc',
+  );
+
+  $items['admin/config/peytz_mail/syncerrors/view/%ctools_js/%peytz_mail_syncerror'] = array(
+    'title' => 'Synchronization errors',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'peytz_mail_syncerror_view',
+    'page arguments' => array(5, 6),
+    'file' => 'peytz_mail.admin.inc',
+  );
+
+  $items['admin/config/peytz_mail/syncerrors/%/%peytz_mail_syncerror'] = array(
+    'title' => 'Manage synchronization errors',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'peytz_mail_syncerror_manage',
+    'page arguments' => array(4, 5),
+    'file' => 'peytz_mail.admin.inc',
+  );
+
+  // Callback for queue processing supposed to be called frequently.
+  $items['peytz_mail/process'] = array(
+    'page callback' => 'peytz_mail_process_queue',
+    'access callback' => 'user_is_anonymous',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['peytz_mail/unsubscribe'] = array(
+    'page callback' => 'peytz_mail_unsubscribe_callback',
+    'access callback' => 'user_is_anonymous',
+    'type' => MENU_CALLBACK,
+  );
+
+	$items['peytz_mail/mail_unsubscribe'] = array(
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('peytz_mail_confirm_unsubscription'),
+		'access callback' => 'user_is_anonymous',
+		'type' => MENU_CALLBACK
+	);
+
+  // Unsubscribe link handler.
+//  $items['unsubscribe/%'] = array(
+//    'title' => 'Unsubscribe from mailinglist',
+//    'type' => MENU_CALLBACK,
+//    'access arguments' => array('access content'),
+//    'page callback' => 'emailkanon_unsubscribe_handler',
+//    'page arguments' => array(1),
+//  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function peytz_mail_permission() {
+  return array(
+    'administer peytz mail settings' => array(
+      'title' => t('Administer Peytz Mail'),
+      'description' => t('Administer Peytz Mail module settings.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_help().
+ */
+function peytz_mail_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#peytz_mail':
+      // Return a line-break version of the module README.txt
+      return check_markup(file_get_contents(drupal_get_path('module', 'peytz_mail') . "/README.txt"));
+  }
+}
+
+/**
+ * Unsubscribes users from a mailing list.
+ *
+ * @param string $hash the encoded mailing list ID.
+ */
+//function peytz_mail_unsubscribe_handler($mailinglist_tid) {
+//  global $user;
+//
+//  if (!user_is_logged_in()) {
+//    drupal_goto('user/login', array('query' => array('destination' => 'unsubscribe/' . $mailinglist_tid)));
+//  }
+//
+//  // Guess the mailinglist from the hash and unsubscribe the user from it.
+//  $subscriptions = emailkanon_get_subscriptions($user->mail);
+//  if (in_array($mailinglist_tid, $subscriptions)) {
+//    $queue = mailer_init_queue();
+//    $mailinglist = taxonomy_term_load($mailinglist_tid);
+//    $unsubscribe_data = array(
+//      'email' => $user->mail,
+//      'mailinglist_ids' => array($mailinglist->mailinglist_id),
+//    );
+//
+//    $queue->put('unsubscribe', $user->uid, array($unsubscribe_data));
+//
+//    unset($subscriptions[$mailinglist_tid]);
+//    emailkanon_save_subscriptions($user->mail, $subscriptions);
+//
+//    drupal_set_message(t('You have successfully changed your subscription preferences.'));
+//  }
+//  else {
+//    drupal_set_message(t('You are not subscribed to the list you want to unsubscribe from.'), 'warning');
+//  }
+//
+//  drupal_goto('user/' . $user->uid . '/subscriptions');
+//}
+
+/**
+ * Implements hook_requirements.
+ */
+function peytz_mail_requirements($phase) {
+  if ($phase == 'runtime') {
+    require_once 'peytz_mail.admin.inc';
+    $err_cnt = count(_peytz_mail_get_syncerrors(TRUE));
+    if (!$err_cnt) {
+      return;
+    }
+
+    $msg = format_plural(
+      $err_cnt,
+      'There is an unresolved synchronization error that requires your attention.',
+      'There are @cnt unresolved synchronization errors that require your attention!',
+      array('@cnt' => $err_cnt)
+    );
+
+    return array('Peytz Mail' => array(
+      'title' => 'Peytz Mail module',
+      'value' =>  $msg . ' ' . l('Review', 'admin/config/peytz_mail/syncerrors'),
+      'severity' => REQUIREMENT_ERROR,
+    ));
+  }
+}
+
+/**
+ * Instantiates queue handling object for various API requests.
+ * @return \OperationQueue
+ */
+function peytz_mail_get_queue_instance() {
+  require_once 'mailer/PeytzMailer.class.php';
+  require_once 'mailer/OperationQueue.class.php';
+  require_once 'mailer/Operation.class.php';
+
+  $service_url = variable_get('peytz_mail_service_url', NULL);
+  $api_key = variable_get('peytz_mail_api_key', NULL);
+  $debug = (bool) variable_get('peytz_mail_debug_enabled', FALSE);
+
+  $mailer = new PeytzMailer($service_url, $api_key);
+  $mailer->setOptions(array('debug' => $debug));
+  $queue = new OperationQueue($mailer);
+  return $queue;
+}
+
+/**
+ * Saves an API call to the queue for further processing.
+ * @param string $function name of an API method.
+ * @param intger $object Drupal id of an entity for which operation is performed.
+ *   For example, for subscribing/unsubscribing of registered Drupal users one
+ *   should specify user's ID (uid).
+ * @param array $arguments API method arguments that provide necessary operation details.
+ * @param boolean $now if the call to API should be done immediately or on the next cron run.
+ */
+function peytz_mail_api_call($function, $object = NULL, $arguments = array(), $now = TRUE) {
+  $queue = peytz_mail_get_queue_instance();
+  $op_id = $queue->put($function, $object, $arguments);
+
+  if ($now) {
+    $op = db_select('peytz_mail_queue', 'q')
+      ->fields('q')
+      ->condition('id', $op_id)
+      ->execute()
+      ->fetchObject('Operation');
+
+    $res = $op->process($queue->getMailer());
+
+    // Mark the operation as processed.
+    db_update('peytz_mail_queue')
+      ->fields(array(
+        'status'    => $op->status,
+        'response'  => serialize($op->response),
+        'processed' => time()))
+      ->condition('id', $op->id)
+      ->execute();
+
+    if (!$res) {
+      drupal_set_message(t('An error occured while communicating to Peytzmail and a retry will be attempted.'), 'error');
+      return FALSE;
+    }
+    else {
+      return $op->response;
+    }
+  }
+
+  return TRUE;
+}
+
+/**
+ * Implements hook_cron().
+ * Triggers queue processing.
+ */
+function peytz_mail_cron() {
+  try {
+    $queue = peytz_mail_get_queue_instance();
+    $queue->processAll();
+  }
+  catch (Exception $e) {
+    watchdog_exception('peytz_mail', $e);
+  }
+}
+
+/**
+ * Direct handler of all operations that are stored in the queue.
+ */
+function peytz_mail_process_queue() {
+  if (!isset($_GET['cron_key']) || variable_get('cron_key', 'drupal') != $_GET['cron_key']) {
+    watchdog('peytz_mail', 'Processing cycle could not run because an invalid key was used.', array(), WATCHDOG_NOTICE);
+    drupal_access_denied();
+  }
+  elseif (variable_get('maintenance_mode', 0)) {
+    watchdog('peytz_mail', 'Processing cycle could not run because the site is in maintenance mode.', array(), WATCHDOG_NOTICE);
+    drupal_access_denied();
+  }
+  else {
+    peytz_mail_cron();
+  }
+}
+
+/**
+ * Error object loading function.
+ */
+function peytz_mail_syncerror_load($id) {
+  return db_query('SELECT * FROM {peytz_mail_queue} WHERE id = :id', array(':id' => $id))->fetchObject();
+}
+
+/**
+ * Unsubscribe callback called by Peytz Mail service each time an email is bounced.
+ */
+function peytz_mail_unsubscribe_callback() {
+  // Let other modules respond on this event, and check only checksum.
+  if ($data = _peytz_mail_get_callback_info()) {
+    module_invoke_all('peytz_mail_unsubscribe', $data['email'], $data['mailinglist_id']);
+  }
+}
+
+/**
+ * Validates the unsubscribe request and returns $email and mailinglists it is unsubscribed from.
+ * POST params: mailinglist_id, subscriber_id, subscriber_foreign_id, email, action, reason, time, cs
+ */
+function _peytz_mail_get_callback_info() {
+	if (!empty($_POST)) {
+		$params = array('mailinglist_id', 'subscriber_id', 'subscriber_foreign_id', 'email', 'action', 'reason', 'time', 'cs');
+		$incoming_params = array_keys($_POST);
+		$incoming_cs = $_POST['cs'];
+	} else {
+		$params = array('mailinglist_id', 'subscriber_id', 'subscriber_foreign_id', 'email', 'cs');
+		$incoming_params = array_keys($_GET);
+		$incoming_cs = $_GET['cs'];
+	}
+
+	if ($missing_params = array_diff($params, $incoming_params)) {
+    drupal_add_http_header('Status', '403 Forbidden');
+    watchdog('peytz_mail', 'Missing unsubscribe callback parameters: @params.', array('@params' => join(',', $missing_params)), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  $token = variable_get('peytz_mail_unsubscribe_token', '');
+  if (!$token) {
+    watchdog('peytz_mail', 'Token is not configured to handle unsubscribe callbacks.', NULL, WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+	if (!empty($_POST)) {
+		$cs = hash('sha256', $_POST['action'] . $_POST['email'] . $_POST['mailinglist_id'] . $_POST['reason'] . $_POST['subscriber_foreign_id'] . $_POST['subscriber_id'] . $_POST['time'] . $token);
+	} else {
+		$cs = hash('sha256', $_GET['email'] .$_GET['mailinglist_id'] . $_GET['subscriber_foreign_id'] . $_GET['subscriber_id'] . $token);
+	}
+
+	if ($cs != $incoming_cs) {
+		drupal_add_http_header('Status', '403 Forbidden');
+		watchdog('peytz_mail', 'Unsubscribe callback authentication failed.', NULL, WATCHDOG_ERROR);
+		return FALSE;
+	}
+
+  return array('email' => $_POST['email'], 'mailinglist_id' => $_POST['mailinglist_id']);
+}
+
+/**
+ * Callback function to unsubscribe user with mail url
+ */
+function peytz_mail_confirm_unsubscription() {
+	if (!empty($_POST) && $_POST['confirm'] == '1' && $_POST['form_id'] == 'peytz_mail_confirm_unsubscription') {
+		unset($_POST);
+		if ($data = _peytz_mail_get_callback_info()) {
+
+			module_invoke_all('peytz_mail_unsubscribe', $_GET['email'], $_GET['mailinglist_id']);
+			$res = peytz_mail_api_call('unsubscribe', NULL, array(
+         'unsubscribe' => array(
+           'mailinglist_ids' => array($_GET['mailinglist_id']),
+           'email' => $_GET['email'],
+         )
+	    ));
+
+			if ($res) {
+				drupal_set_message(t('You have successfully unsubscribed from the mailing list!'));
+				drupal_goto('');
+			}
+		} else {
+			drupal_set_message(t('Something went wrong!'));
+			drupal_goto('');
+		}
+	} else {
+		return confirm_form('', t('Unsubscribe from mail list'), '', t('You realy want to unsubscribe from mail list?'));
+	}
+}

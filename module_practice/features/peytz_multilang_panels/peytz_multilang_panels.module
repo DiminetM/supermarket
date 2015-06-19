@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz multilang panels feature.
+ */
+
+include_once 'peytz_multilang_panels.features.inc';

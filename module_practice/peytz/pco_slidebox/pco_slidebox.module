@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ *   Provides a slide-out region which presents a link to the next piece of content
+ *
+ * @author
+ *   Brian Altenhofel http://drupal.org/user/550616
+ */
+
+/**
+ * Implements hook_define_region().
+ */
+function pco_slidebox_define_regions() {
+  $region['pco_slidebox'] = array(
+    'title' => 'Slidebox',
+    'js' => drupal_get_path('module', 'pco_slidebox') . '/js/pco_slidebox.js',
+    'css' => drupal_get_path('module', 'pco_slidebox') . '/css/pco_slidebox.css',
+    'render_callback' => '_pco_slidebox_render_region',
+  );
+
+  return $region;
+}
+
+/**
+ * Implements hook_regions_region_alter().
+ */
+function pco_slidebox_regions_region_alter(&$region, $region_name) {
+  // Example to add an inner DIV to the region markup.
+  if (!empty($region['blocks'])) {
+    if ($region_name == 'pco_slidebox' && !empty($region['blocks'])) {
+      drupal_add_js(array('pcoSlidebox' => pco_slidebox_js_settings()), "setting");
+      $new_markup = array(
+        'start' => $region['start'],
+        'inner' => '<a class="close"></a>',
+        'blocks' => $region['blocks'],
+        'inner_end' => '<div id="pco_slidebox_manual"><a class="open"></a></div><div id="pco_slidebox_cookie"></div>',
+        'end' => $region['end'],
+      );
+      $region = $new_markup;
+    }
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function pco_slidebox_init() {
+  drupal_add_library('system', 'jquery.cookie');
+}
+
+/**
+ * Implements hook_permission().
+ */
+function pco_slidebox_permission() {
+  return array(
+    'administer slidebox' => array(
+      'title' => t('Administer pco_slidebox'),
+      'description' => t('Configure settings for the pco_slidebox module')
+    )
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function pco_slidebox_menu() {
+  $items = array();
+  $items['admin/config/user-interface/pco-slidebox'] = array(
+    'title' => 'Peytz Slidebox',
+    'description' => 'Configure the peytz slidebox module',
+    'access arguments' => array('administer pco_slidebox'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pco_slidebox_admin_settings'),
+    'file' => 'pco_slidebox.admin.inc'
+  );
+  return $items;
+}
+
+/**
+ * Returns settings to be used by JavaScript.
+ */
+function pco_slidebox_js_settings() {
+  return array(
+    'showTime' => variable_get('pco_slidebox_show_time', 300),
+    'hideTime' => variable_get('pco_slidebox_hide_time', 100)
+  );
+}
+
+/**
+ * Callback to render Peytz Slidebox region.
+ */
+function _pco_slidebox_render_region($block_html, $block) {
+  $renderable_block = _block_get_renderable_array(array($block));
+  $output = drupal_render($renderable_block);
+  return $output;
+}

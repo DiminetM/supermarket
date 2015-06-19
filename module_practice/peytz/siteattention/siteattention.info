@@ -1,0 +1,5 @@
+name = SiteAttention
+description = Integrates the SiteAttention SEO plugin (www.siteattention.com) for content editing
+package = "SiteAttention"
+version = "7.x"
+core = 7.x

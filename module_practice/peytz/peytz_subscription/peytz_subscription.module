@@ -1,0 +1,72 @@
+<?php
+/**
+ * @file
+ * Peytz Newsletter Subscription module.
+ */
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function peytz_subscription_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'webform_client_form_127' || $form_id == 'webform_client_form_431') {
+
+    foreach (element_children($form['submitted']) as $element) {
+      // Pass each webform component title through the t() function.
+      $form['submitted'][$element]['#title'] = t($form['submitted'][$element]['#title']);
+    }
+
+    $form['#submit'][] = 'subscription_webform_form_submit';
+  }
+}
+
+/**
+ * Add newsletter subscription to webform.
+ */
+function subscription_webform_form_submit($form, &$form_state) {
+  // Synchronize with Peytz Mail.
+  if (module_exists('peytz_mail')) {
+    //$domain = preg_match('/no/', $_SERVER['SERVER_NAME']) ? 'peytz-co-norge' : 'peytz-co-danmark';
+    $domain = $form['#form_id'] == 'webform_client_form_431' ? 'peytz-co-norge' : 'peytz-co-danmark';
+    $webform_components = array();
+    foreach ($form['#node']->webform['components'] as $cid => $component) {
+      $webform_components[$cid] = $component['form_key'];
+    }
+    $submitted_data = array();
+    foreach ($form_state['values']['submitted'] as $cid => $value) {
+      if (preg_match('/subscribe/', $webform_components[$cid])) {
+        continue;
+      }
+      elseif (preg_match('/name/', $webform_components[$cid])) {
+        $submitted_data['name'] = $value;
+        $name = explode(' ', $value);
+        $submitted_data['first_name'] = array_shift($name);
+        $submitted_data['last_name'] = implode(' ', $name);
+      }
+      elseif (preg_match('/email/', $webform_components[$cid])) {
+        $submitted_data['email'] = $value;
+      }
+      else {
+        $submitted_data[$webform_components[$cid]] = $value;
+      }
+    }
+    $res = peytz_mail_api_call('subscribe', NULL, array(
+      'subscribe' => array(
+        'mailinglist_ids' => array($domain),
+        'subscriber' => $submitted_data,
+        'skip_confirm' => FALSE,
+        'skip_welcome' => FALSE,
+      )
+    ));
+
+    if (!$res) {
+      drupal_goto('tilmeld');
+    }
+    elseif ($res->result == 'unprocessable_entity') {
+      drupal_set_message(check_plain(t($res->message)), 'error');
+      drupal_goto('tilmeld');
+    }
+  }
+  else {
+    drupal_set_message(t('Peytz Mail module does not exist. Contact site administrator.'), 'error');
+  }
+}

@@ -1,0 +1,28 @@
+<?php
+/*
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function spk_panels_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' || $module == 'panels') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+function spk_panels_preprocess_html(&$variables) {
+	// Add uniform layout styles
+	$options = array(
+		'group' => CSS_DEFAULT,
+		'every_page' => TRUE,
+	);
+
+	drupal_add_css(drupal_get_path('module', 'spk_panels') . '/spk_panels.base.css', $options);
+}
+
+/*
+ * Implementation of hook_menu_alter().
+ */
+function spk_panels_menu_alter(&$items) {
+  //issue http://drupal.org/node/1675962
+  // we unset menu item that overwrites default search panel page settings
+  unset($items['search/site/%']);
+}

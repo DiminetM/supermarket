@@ -1,0 +1,15 @@
+name = Image Style
+description = Styles for store
+core = 7.x
+package = Market
+version = 7.x-1.1
+project = tm_image_style
+dependencies[] = image
+features[features_api][] = api:2
+features[image][] = banner_style
+features[image][] = paterns_style_150
+features[image][] = style-img-carusel_150
+features[image][] = style-img-carusel_product90
+features[image][] = style-img300
+features[image][] = style_image_150
+features[image][] = style_imgex-150

@@ -1,0 +1,4 @@
+name = Supermarket panels
+description = Contains necessary panel layouts and styles for the air theme
+core = 7.x
+package = Panels

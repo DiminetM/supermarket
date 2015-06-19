@@ -1,0 +1,79 @@
+/**
+ * @file
+ * nav.css
+ *
+ * Navigation stylesheet for peytz.dk.
+ * Contains styles for main navigation.
+ */
+
+/* Import LESS files */
+@import url('radius.less');
+
+div[role="navigation"] nav {
+	float: left;
+	padding: 14px 3px 0;
+	width: 560px;
+	font-family: NewsGothicBT-Bold, 'Arial Narrow', sans-serif, sans-serif;
+}
+
+div[role="navigation"] nav h2 {
+  display: none;
+  -moz-user-select: none; // mozilla browsers
+  -webkit-user-select: none;
+}
+
+div[role="navigation"] nav ul li {
+	display: inline;
+	font-size: 1.285714286em;
+	line-height: 1.2em;
+	-moz-user-select: none; // mozilla browsers
+  -webkit-user-select: none;
+	-webkit-font-smoothing: antialiased;
+}
+
+div[role="navigation"] nav ul li a {
+	margin: 0 0.071428571em;
+	padding: 2px 8px;
+}
+
+div[role="navigation"] nav ul li a.active {
+  color: rgb(255,255,255);
+  background: #f06c22;
+  .border-radius(3px);
+}
+
+div[role="navigation"] nav ul li a.active:hover,
+div[role="navigation"] nav ul li a.active:active {
+  color: rgb(255,255,255);
+}
+
+div[role="navigation"] nav ul li a:hover {
+	color: rgb(255,153,0);
+	text-decoration: none;
+}
+
+div[role="navigation"] div.header ul.secondary {
+	float: right;
+
+	li {
+		display: inline;
+		padding: 0 5px 0 6px;
+		border-right: 1px solid #fff;
+
+		a {
+			color: rgb(170,170,170);
+			padding-top: 1px;
+
+			&.is-cookie {
+				background: url(../../images/icon-cookie.png) no-repeat right 2px;
+				padding-right: 20px;
+				padding-bottom: 2px;
+			}
+		}
+
+		&.last {
+			padding: 0 0 0 .2em;
+			border: none;
+		}
+	}
+}

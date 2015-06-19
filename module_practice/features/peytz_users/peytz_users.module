@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Peytz Users feature.
+ */
+
+include_once 'peytz_users.features.inc';

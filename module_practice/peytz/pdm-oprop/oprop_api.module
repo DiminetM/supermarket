@@ -1,0 +1,704 @@
+<?php
+// $Id: oprop_api.module,v 1.2 2011-04-19 07:39:03 ys Exp $
+
+/**
+ * @file
+ * This module implements OPROP newsletter subscription handling on
+ * the user edit page, using the Oprop SOAP interface.
+ *
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function oprop_api_menu() {
+  $items['admin/config/system/oprop'] = array(
+    'title' => 'Oprop API settings',
+    'description' => 'Oprop integration settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('oprop_api_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'oprop_api.admin.inc',
+  );
+
+  $items['admin/config/system/oprop/view'] = array(
+    'title' => 'View',
+    'weight' => -1,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter() for user_profile_form().
+ */
+function oprop_api_form_user_profile_form_alter(&$form, &$form_state) {
+  if (variable_get('oprop_api_show_on_useredit', FALSE)) {
+    if (empty($form['newsletters_fieldset']['current_mail'])) {
+      $current_mail = $form['_account']['#value']->mail;
+    }
+    else {
+      $current_mail = $form['newsletters_fieldset']['current_mail'];
+    }
+    if (empty($form['newsletters_fieldset']['current_newsletters'])) {
+      $current_newsletters = oprop_api_subscribed_list_names($current_mail);
+    }
+    else {
+      $current_newsletters = unserialize($form['newsletters_fieldset']['current_newsletters']);
+    }
+
+    $public_newsletters = oprop_api_public_lists();
+
+    $form['newsletters_fieldset'] = array(
+      '#weight' => 0,
+      '#type' => 'fieldset',
+      'current_mail' => array(
+        '#type' => 'hidden',
+        '#value' => $current_mail,
+      ),
+      'current_newsletters' => array(
+        '#type' => 'hidden',
+        '#value' => serialize($current_newsletters),
+      ),
+      'newsletters' => array(
+        '#type' => 'checkboxes',
+        '#title' => t('Maillister'),
+        '#options' => $public_newsletters,
+        '#default_value' => array_keys($current_newsletters),
+      ),
+    );
+    array_unshift($form['#submit'], 'oprop_api_user_profile_form_submit');
+  }
+}
+
+/**
+ * "Implementation" of hook_submit().
+ *
+ * Handles submit for newsletter subscription on user_submit_form.
+ * There are four possible cases:
+ * 1) No change in newsletter subscriptions, no change in e-mail
+ *    Do nothing. :)
+ * 2) No change in newsletter subscriptions, e-mail changed
+ * 3) Newsletter subscriptions changed, e-mail changed
+ *    *) Unsubscribe newsletters with old e-mail.
+ *    *) Subscribe newsletters with new e-mail
+ * 4) Newsletter subscriptions changed, no change in e-mail
+ *    *) Unsubscribe unticked newsletters
+ *    *) Subscribe to (newly) ticked newsletters
+ */
+function oprop_api_user_profile_form_submit($form, &$form_state) {
+  $form_values = $form_state['values'];
+  $name = $form_values['name'];
+  $old_mail = $form_values['current_mail'];
+  $new_mail = $form_values['mail'];
+  $old_newsletters = unserialize($form_values['current_newsletters']);
+  $new_newsletters = $form_values['newsletters'];
+  if ($new_mail != $old_mail) {
+    oprop_api_list_unsubscribe($old_newsletters, $old_mail);
+    oprop_api_list_subscribe($new_newsletters, $new_mail, $name);
+  }
+  elseif ($new_newsletters != $old_newsletters) {
+    foreach ($old_newsletters as $newsletter) {
+      if (!in_array($newsletter, $new_newsletters)) {
+        oprop_api_list_unsubscribe($newsletter, $new_mail);
+      }
+    }
+    foreach ($new_newsletters as $newsletter) {
+      if (!in_array($newsletter, $old_newsletters)) {
+        oprop_api_list_subscribe($newsletter, $new_mail, $name);
+      }
+    }
+  }
+}
+
+/**
+ * hook_block_info().
+ */
+function oprop_api_block_info() {
+  $blocks['oprop_newsletter'] = array( 'info' => t('Oprop newsletter signup'));  
+  return $blocks;
+}
+
+/**
+ * hook_block_block_view().
+ */
+function oprop_api_block_view($delta = '') {
+  switch ($delta) {
+    case 'oprop_newsletter':
+      $block['subject'] = '';
+      $block['content'] = drupal_get_form('oprop_api_list_registration_form');
+    break;
+  }
+  return $block;
+}
+
+/**
+ * hook_block_configure().
+ */
+function oprop_api_block_configure($delta = '') {
+      $form = array();
+      if ($delta == 0) {
+        $form['oprop_api_subscribable_lists'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Subscribable lists'),
+          '#description' => t('Lists that are available for subscription in this block.'),
+          '#options' => oprop_api_public_lists(),
+          '#default_value' => variable_get('oprop_api_subscribable_lists', array()),
+        );
+
+        $form['oprop_api_show_unsubscribe'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Allow unsubscribe'),
+          '#description' => t('If not allowed, the only way to unsubscribe is through the mail. Which is recommended.'),
+          '#default_value' => variable_get('oprop_api_show_unsubscribe', TRUE), // True for compatibility. '',
+        );
+      }
+      return $form;
+}
+
+/**
+ * hook_block_save().
+ */
+function oprop_api_block_save($delta = '', $edit = array()) {
+  if ($delta == 'oprop_newsletter') {
+        variable_set('oprop_api_subscribable_lists', $edit['oprop_api_subscribable_lists']);
+        variable_set('oprop_api_show_unsubscribe', $edit['oprop_api_show_unsubscribe']);
+  }
+}
+
+/**
+ * Here we generate the registration form.
+ */
+function oprop_api_list_registration_form($form) {
+  global $user;
+
+  if (isset($user->mail)) {
+    $current_mail = $user->mail;
+  }
+  else {
+    $current_mail = '';
+  }
+
+  $form['#attributes']['class'] = 'mdFormNewsletter';
+
+  $current_newsletters = oprop_api_subscribed_list_names($current_mail);
+  $public_newsletters = oprop_api_public_lists();
+
+  $subscribables = array_filter(variable_get('oprop_api_subscribable_lists', array()));
+
+  if (count($subscribables) > 1) {
+    $form['lists'] = array(
+      '#type' => 'fieldset',
+      '#attributes' => array('class' => 'mdNewsletterSelect'),
+      '#title' => t('Select newsletters'),
+    );
+
+    foreach ($subscribables as $name) {
+      $options[$name] = $public_newsletters[$name];
+    }
+
+    $form['lists']['lists'] = array(
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => array_keys($current_newsletters),
+    );
+  }
+  elseif (count($subscribables) <= 1) {
+    $form['lists'] = array(
+      '#type' => 'value',
+      '#value' => array_keys($subscribables),
+    );
+  }
+
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Name'),
+    '#size' => 40,
+  );
+
+  $form['email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('E-mail'),
+    '#size' => 40,
+    '#required' => TRUE,
+    '#default_value' => $current_mail,
+  );
+
+  if (variable_get('oprop_api_optin_checkbox_text', '')) {
+    $form['optin'] = array(
+      '#type' => 'checkbox',
+      '#title' => variable_get('oprop_api_optin_checkbox_text', ''),
+    );
+  }
+  else {
+    $form['optin'] = array(
+      '#type' => 'value',
+      '#value' => TRUE,
+    );
+  }
+
+  $form['subscribe'] = array(
+    '#type' => 'submit',
+    '#value' => t('Subscribe'),
+    '#action' => 'subscribe',
+  );
+
+  if (variable_get('oprop_api_show_unsubscribe', TRUE)) {
+    $form['unsubscribe'] = array(
+      '#type' => 'submit',
+      '#value' => t('Unsubscribe'),
+      '#action' => 'unsubscribe',
+    );
+  }
+
+  return $form;
+}
+
+/**
+ */
+function oprop_api_list_registration_form_validate($form, &$form_state) {
+  if (!$form_state['values']['optin']) {
+    form_error($form['optin'], t(variable_get('oprop_api_optin_required_message', 'You must accept the terms in order to subscribe.')));
+  }
+  if (!$form_state['values']['lists']) {
+    form_error($form['optin'], t('No mailing list selected.'));
+  }
+}
+
+/**
+ * Registration form submit handler.
+ */
+function oprop_api_list_registration_form_submit($form, &$form_state) {
+  $email = $form_state['values']['email'];
+  $name = $form_state['values']['name'];
+  $lists = $form_state['values']['lists'];
+
+  $action = $form_state['clicked_button']['#action'];
+  if ($action == 'subscribe') {
+    if ($result = oprop_api_list_subscribe($lists, $email, $name)) {
+      if (variable_get('oprop_api_send_invitation', FALSE)) {
+        oprop_api_list_invite($lists, $email);
+      }
+      $msg = variable_get('oprop_api_messages_subscribe', t('Thank you for subscribing.'));
+      drupal_set_message($msg);
+
+      if ($path = variable_get('oprop_api_messages_subscribe_path', '')) {
+        drupal_goto($path);
+      }
+    }
+    else {
+      drupal_set_message(t('An error happened, please try again later.'), 'error');
+      watchdog('oprop_api', 'Error subscribing @mail, result: @result', array('@result' => print_r($result, TRUE), '@mail' => $email), WATCHDOG_ERROR);
+    }
+  }
+  elseif ($action == 'unsubscribe') {
+    if ($result = oprop_api_list_unsubscribe($lists, $email)) {
+      $msg = variable_get('oprop_api_messages_unsubscribe', t('You have unsubscribed.'));
+      drupal_set_message($msg);
+
+      if ($path = variable_get('oprop_api_messages_unsubscribe_path', '')) {
+        drupal_goto($path);
+      }
+    }
+    else {
+      drupal_set_message(t('An error happened, please try again later.'), 'error');
+      watchdog('oprop_api', 'Error unsubscribing @mail, result: @result', array('@result' => print_r($result, TRUE), '@mail' => $email), WATCHDOG_ERROR);
+    }
+  }
+}
+
+/**
+ * @defgroup "Oprop API"
+ */
+
+/**
+ * Initiates an Oprop soap client
+ *
+ * @param bool reset internal Soap client
+ *
+ * @return object
+ */
+function _oprop_client($reset = FALSE) {
+  static $client = NULL;
+  if (empty($client) || $reset) {
+    $client = new SoapClient(_oprop_service_uri(), _oprop_service_params());
+  }
+  return $client;
+}
+
+/**
+ * @return string Facility base uri
+ */
+function _oprop_facility_base_uri() {
+  global $CUSTOMER;
+
+  $facility_id = $CUSTOMER->facility->id;
+
+  if (isset($_SERVER['PEYTZ_DEV'])) {
+    // development / test
+    return 'https://vip-f' . $facility_id . '-test.dev.peytz.dk/';
+  }
+  else {
+    // production
+    switch ($facility_id) {
+      case 1:
+        return 'https://vip.peytz.dk/';
+      case 2:
+        return 'https://vip2.peytz.dk/';
+    }
+  }
+}
+
+function _oprop_customer_base_uri() {
+  global $CUSTOMER;
+
+  $customer_base_uri = variable_get('oprop_api_server', '');
+  if (empty($customer_base_uri)) {
+    $customer_base_uri = _oprop_facility_base_uri();
+  }
+
+  $customer_base_uri = rtrim($customer_base_uri, '\/') . '/';
+
+  $customer_name = variable_get('peytz_customer_name', '');
+  $customer_base_uri .= empty($customer_name) ? $CUSTOMER->name : $customer_name;
+
+  return $customer_base_uri;
+}
+
+/**
+ * @return string Oprop service uri.
+ */
+function _oprop_service_uri() {
+  return _oprop_customer_base_uri() . '/oprop/soap/service.php?wsdl';
+}
+
+/**
+ * @return array Oprop service parameters
+ */
+function _oprop_service_params() {
+  return array(
+    'login' => variable_get('oprop_api_username', 'soap'),
+    'password' => variable_get('oprop_api_password', ''),
+  );
+}
+
+/**
+ * All mailing lists.
+ *
+ * @return
+ *   Either returns an array of newsletter objects, if succesful, or a
+ *   boolean FALSE if it isn't.
+ */
+function oprop_api_all_lists() {
+  // Attempt to get data from cache
+  if (variable_get('oprop_api_cache_enabled', TRUE) && ($cache = cache_get('oprop_api_lists_all', 'cache')) && !empty($cache->data)) {
+    $lists = unserialize($cache->data);
+  }
+  // Otherwise contact SOAP service
+  else {
+    try {
+      $lists = _oprop_client()->getMailinglists();
+      if (variable_get('oprop_api_cache_enabled', TRUE)) {
+        cache_set('oprop_api_lists_all', serialize($lists), 'cache', REQUEST_TIME + 3600);
+      }
+    }
+    catch (SoapFault $exception) {
+      $lists = array();
+      trigger_error(t('Problem retrieving lists with newsletter webservice: %exception', array('%exception' => $exception)), E_USER_WARNING);
+    }
+  }
+
+  return $lists;
+}
+
+/**
+ * Public mailing lists.
+ *
+ * @return array
+ */
+function oprop_api_public_lists() {
+  $lists = array();
+  foreach (oprop_api_all_lists() as $list) {
+    if (!empty($list->public)) {
+      $lists[$list->name] = $list->title;
+    }
+  }
+  return $lists;
+}
+
+/**
+ * Validates a list identifier.
+ *
+ * @param mixed $list string or numeric identifying an Oprop mailing list.
+ *
+ * @return boolean
+ */
+function _oprop_valid_list_id($list) {
+  return (is_string($list) || is_numeric($list)) && !empty($list);
+}
+
+/**
+ * Returns the name of the mailinglist, or null.
+ */
+function _oprop_list_name($id) {
+  foreach (oprop_api_all_lists() as $list) {
+    if ($list->id == $id) {
+      return $list->name;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * Handles aspects of mailing list subscriptions.
+ *
+ * @param string $op
+ * @param mixed $lists string or array containing list id(s)
+ * @param string $email
+ * @param array $subscriber_info
+ *
+ * @return boolean
+ */
+function oprop_api_subscription($op, $lists, $email, $subscriber_info = NULL) {
+  if (_oprop_valid_list_id($lists)) {
+    $lists = array($lists);
+  }
+
+  if (!is_array($lists)) {
+    return FALSE;
+  }
+
+  foreach ($lists as $list) {
+    _oprop_api_list_op($op, $list, $email);
+  }
+
+  if (!empty($subscriber_info)) {
+    return oprop_api_set_subscriber_info($email, $subscriber_info);
+  }
+  return TRUE;
+}
+
+/**
+ * Internal list/subscriber management function
+ */
+function _oprop_api_list_op($op, $list, $email) {
+  if (empty($list)) {
+    return FALSE;
+  }
+
+  // Clear cache before attempting any list management
+  if (variable_get('oprop_api_cache_enabled', TRUE)) {
+    cache_clear_all('oprop_api_lists_all', 'cache');
+    cache_clear_all('oprop_api_lists_subscribed_' . $email, 'cache');
+  }
+
+  $return = FALSE;
+
+  switch ($op) {
+    case 'subscribe':
+      if (is_numeric($list)) {
+        $return = _oprop_client()->subscribeToMailinglist($list, $email);
+      }
+      else {
+        $return = _oprop_client()->subscribe($list, $email);
+      }
+      break;
+
+    case 'subscribe-new':
+      if (is_numeric($list)) {
+        if ($list_name = _oprop_list_name($list)) {
+          $return = _oprop_client()->subscribeIfNoHistory($list_name, $email);
+        }
+        else {
+          $return = FALSE;
+        }
+      }
+      else {
+        $return = _oprop_client()->subscribeIfNoHistory($list, $email);
+      }
+      break;
+
+    case 'unsubscribe':
+      if (is_numeric($list)) {
+        $return = _oprop_client()->unsubscribeFromMailinglist($list, $email);
+      }
+      else {
+        $return = _oprop_client()->unsubscribe($list, $email);
+      }
+      break;
+
+    case 'invite':
+      if (is_numeric($list)) {
+        if ($list_name = _oprop_list_name($list)) {
+          $return = _oprop_client()->invite($list_name, $email);
+        }
+        else {
+          $return = FALSE;
+        }
+      }
+      else {
+        $return = _oprop_client()->invite($list, $email);
+      }
+      break;
+  }
+
+  // Clear user cache again to make sure it includes the new changes
+  if (variable_get('oprop_api_cache_enabled', TRUE)) {
+    cache_clear_all('oprop_api_lists_subscribed_' . $email, 'cache');
+  }
+
+  return $return;
+}
+
+/**
+ * Handles mailinglist subscription
+ *
+ * @see oprop_api_list_unsubscribe()
+ *
+ * @param $list_ids array of list ids or single string/numeric
+ * @param string $email
+ * @param string $subscriber_name
+ *
+ * @return boolean
+ */
+function oprop_api_list_subscribe($list_ids, $email, $subscriber_name = '') {
+  return oprop_api_subscription('subscribe', $list_ids, $email, array('name' => $subscriber_name));
+}
+
+/**
+ * Subscribe email address, if it haven't been subscribed before.
+ *
+ * @see oprop_api_list_unsubscribe()
+ *
+ * @param $list_ids array of list ids or single string/numeric
+ * @param string $email
+ * @param string $subscriber_name
+ *
+ * @return boolean
+ */
+function oprop_api_list_subscribe_new($list_ids, $email, $subscriber_name = '') {
+  return oprop_api_subscription('subscribe-new', $list_ids, $email, array('name' => $subscriber_name));
+}
+
+/**
+ * Handles newsletter unsubscribing.
+ *
+ * @see oprop_api_list_subscribe()
+ *
+ * @param array $list_ids
+ * @param string $email
+ *
+ * @return boolean
+ */
+function oprop_api_list_unsubscribe($list_ids, $email) {
+  return oprop_api_subscription('unsubscribe', $list_ids, $email);
+}
+
+/**
+ * Handles mailinglist invites
+ *
+ * @param $list_ids array of list ids or single string/numeric
+ * @param string $email
+ *
+ * @return boolean
+ */
+function oprop_api_list_invite($list_ids, $email) {
+  return oprop_api_subscription('invite', $list_ids, $email);
+}
+
+/**
+ * Get an array of subscribed mailinglist ids for the given
+ * email address.
+ *
+ * @param string $email
+ *
+ * @return array
+ */
+function oprop_api_subscribed_list_ids($email) {
+  $lists = array();
+  foreach (_oprop_api_subscribed_lists($email) as $list) {
+    $lists[] = $list->id;
+  }
+  return $lists;
+}
+
+/**
+ * Get an array of subscribed mailinglist names for the given
+ * email address.
+ *
+ * @param string $email
+ *
+ * @return array
+ */
+function oprop_api_subscribed_list_names($email) {
+  $lists = array();
+  foreach (_oprop_api_subscribed_lists($email) as $list) {
+    $lists[$list->name] = $list->id;
+  }
+  return $lists;
+}
+
+/**
+ * Subscribed mailing lists for a given e-mail address.
+ *
+ * @param string $email
+ *
+ * @return array
+ */
+function _oprop_api_subscribed_lists($email) {
+  // Attempt to get data from cache
+  if (variable_get('oprop_api_cache_enabled', TRUE) && ($cache = cache_get('oprop_api_lists_subscribed_' . $email, 'cache')) && !empty($cache->data)) {
+    $lists = unserialize($cache->data);
+  }
+  // Otherwise contact SOAP service
+  else {
+    try {
+      $lists = _oprop_client()->getSubscribedMailinglists($email);
+      if (variable_get('oprop_api_cache_enabled', TRUE)) {
+        cache_set('oprop_api_lists_subscribed_' . $email, serialize($lists), 'cache', REQUEST_TIME + 3600);
+      }
+    }
+    catch (SoapFault $exception) {
+      $lists = array();
+      trigger_error(t('Problem retrieving already subscribed newsletters: %exception', array('%exception' => $exception)), E_USER_WARNING);
+    }
+  }
+
+  return $lists;
+}
+
+/**
+ *
+ * @param string $email
+ *
+ * @return object Oprop subscriber info.
+ *
+ */
+function oprop_api_get_subscriber_info($email) {
+  return _oprop_client()->getSubscriberInfo($email, NULL);
+}
+
+/**
+ * Sets subscriber information.
+ *
+ * @param $email
+ *   The identifier for the subscriber to change the info of.
+ * @param $info
+ *   An array of information to be set on the subscriber.
+ *   Available parameters are:
+ *   * name
+ *     Which sets the name of the subscriber.
+ */
+function oprop_api_set_subscriber_info($email, $info) {
+  $subscriber = oprop_api_get_subscriber_info($email);
+  if (isset($info['name'])) {
+    $subscriber->name = $info['name'];
+  }
+  return _oprop_client()->setSubscriberInfo($email, NULL, $subscriber);
+}
+
+/**
+ * @} End defgroup "Oprop API"
+ */

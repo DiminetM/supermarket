@@ -1,0 +1,338 @@
+<?php
+/**
+ * @file
+ * PBasic module for communication to Peytz Mail API. Provides basic REST client and queuing of calls.
+ * @author Christian Nikolajsen <cn@peytz.dk>
+ * @author Alex Oroshchuk <ao@peytz.dk>
+ */
+
+/**
+ * Implements hook_form().
+ */
+function peytz_mail_subscribe_form($form, &$form_state, $conf) {
+  if (empty($conf['newsletter_lists'])) {
+    return;
+  }
+
+  if ($conf['name_field_setting'] == 'single') {
+    $form['full_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Name'),
+      '#required' => TRUE,
+    );
+  }
+  elseif ($conf['name_field_setting'] == 'double') {
+    $form['first_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('First name'),
+      '#required' => TRUE,
+    );
+    $form['last_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Last name'),
+      '#required' => TRUE,
+    );
+  }
+
+  $form['email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('E-mail'),
+    '#required' => TRUE,
+  );
+
+  $newsletter_lists = is_array($conf['newsletter_lists']) ? $conf['newsletter_lists'] : unserialize($conf['newsletter_lists']);
+  $newsletter_list_options = array();
+  if (!empty($newsletter_lists)) {
+    foreach ($newsletter_lists as $list) {
+      $newsletter_list_options[$list['id']] = $list['title'];
+    }
+  }
+
+  // Get custom fields from other modules.
+  foreach (module_implements('peytz_mail_subscribe_form_fields') as $module) {
+    $function = $module . '_peytz_mail_subscribe_form_fields';
+    $function($form, $newsletter_list_options);
+  }
+
+  if (count($newsletter_list_options) == 1 || $conf['hide_newsletter_lists']) {
+    foreach ($newsletter_lists as $list) {
+      $form['newsletter_list_signup_' . $list['id']] = array(
+        '#type' => 'hidden',
+        '#value' => 1,
+      );
+    }
+  }
+  else {
+    foreach ($newsletter_lists as $list) {
+      $form['newsletter_list_signup_' . $list['id']] = array(
+        '#type' => 'checkbox',
+        '#title' => $list['title'],
+        '#description' => $list['description'],
+      );
+    }
+  }
+
+  $form['skip_confirm'] = array(
+    '#type' => 'hidden',
+    '#value' => $conf['skip_confirm'] ? TRUE : FALSE,
+  );
+  $form['skip_welcome'] = array(
+    '#type' => 'hidden',
+    '#value' => $conf['skip_welcome'] ? TRUE : FALSE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Signup'),
+  );
+
+  return $form;
+}
+
+/**
+ * Peytz Mail signup form.
+ */
+function peytz_mail_subscribe_form_validate($form, &$form_state) {
+  $keys = array_keys($form_state['values']);
+
+  $list_fields = preg_grep('/^newsletter_list_signup_/', $keys);
+  $list_fields = array_values($list_fields);
+  $lists_selected = array();
+  foreach ($list_fields as $field) {
+    if (!empty($form_state['values'][$field])) {
+      $lists_selected[] = str_replace('newsletter_list_signup_', '', $field);
+    }
+  }
+
+  if (empty($lists_selected)) {
+    form_set_error($list_fields[0], t('Please select which newsletter to sign up for.'));
+  }
+  else {
+    // Do the subscribe API call in the validate funcion so we can return error
+    // message to the form.
+    $parameters['subscribe']['subscriber']['email'] = $form_state['values']['email'];
+    if (!empty($form_state['values']['full_name'])) {
+      $parameters['subscribe']['subscriber']['full_name'] = $form_state['values']['full_name'];
+    }
+    if (!empty($form_state['values']['first_name'])) {
+      $parameters['subscribe']['subscriber']['first_name'] = $form_state['values']['first_name'];
+    }
+    if (!empty($form_state['values']['last_name'])) {
+      $parameters['subscribe']['subscriber']['last_name'] = $form_state['values']['last_name'];
+    }
+    $parameters['subscribe']['mailinglist_ids'] = $lists_selected;
+    $parameters['subscribe']['skip_confirm'] = $form_state['values']['skip_confirm'];
+    $parameters['subscribe']['skip_welcome'] = $form_state['values']['skip_welcome'];
+
+    // Handle custom fields.
+    $custom_fields = preg_grep('/^peytz_mail_custom_field_/', $keys);
+    $custom_fields = array_values($custom_fields);
+    foreach ($custom_fields as $field) {
+      if (!empty($form_state['values'][$field])) {
+        $parameters['subscribe']['subscriber'][str_replace('peytz_mail_custom_field_', '', $field)] = $form_state['values'][$field];
+      }
+    }
+
+    peytz_mail_api_call('mailinglists/subscribe', NULL, $parameters, TRUE);
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function peytz_mail_subscribe_block_info() {
+  $blocks['peytz_mail_subscribe_box'] = array(
+    'info' => t('Peytz Mail signup box'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function peytz_mail_subscribe_block_configure($delta = '') {
+  $form = array();
+  if ($delta == 'peytz_mail_subscribe_box') {
+    $conf = variable_get($delta . '_block_conf', array());
+
+    // Name field settings.
+    $form['name_field_setting'] = array(
+      '#type' => 'select',
+      '#title' => t('Name field setup'),
+      '#multiple' => FALSE,
+      '#description' => t('Select to display the name field as a single full name field, as first name and last name fields, or turned off.'),
+      '#options' => array(
+        0 => 'Disabled',
+        'single' => 'Single field',
+        'double' => 'Double fields',
+      ),
+      '#default_value' => (!empty($conf['name_field_setting']) ? $conf['name_field_setting'] : 0),
+    );
+
+    $form['lists'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Newsletter lists'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+
+    $options = array();
+    $mailinglists = peytz_mail_get_mailing_lists();
+    foreach ($mailinglists as $list) {
+      $options[$list['id']] = $list['title'];
+    }
+    $selected_options = array();
+    $conf_newsletter_lists = !empty($conf['newsletter_lists']) ? $conf['newsletter_lists'] : array();
+    if (!empty($conf_newsletter_lists)) {
+      foreach ($conf_newsletter_lists as $conf_list) {
+        $selected_options[] = $conf_list['id'];
+      }
+    }
+
+    if (!empty($mailinglists)) {
+      $form['lists']['newsletter_lists'] = array(
+        '#type' => 'select',
+        '#title' => t('Newsletter lists'),
+        '#multiple' => TRUE,
+        '#description' => t('Select which newsletter lists this sign up box is connected to. If multiple lists are selected they will be presented as checkboxes in the sign up box.'),
+        '#options' => $options,
+        '#default_value' => $selected_options,
+      );
+      $form['lists']['hide_newsletter_lists'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Hide newsletter lists from users.'),
+        '#default_value' => !empty($conf['hide_newsletter_lists']) ? $conf['hide_newsletter_lists'] : -1,
+        '#description' => t('Check this if the users are not allowed to select which lists to join.'),
+      );
+    }
+    else {
+      $form['lists']['no_lists'] = array(
+        '#markup' => t('No public newsletter lists found. Please check your Peytz Mail configuration.'),
+      );
+    }
+
+    $form['signup_settings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Signup settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+
+    $form['signup_settings']['skip_confirm'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Skip confirmation mails.'),
+      '#default_value' => !empty($conf['skip_confirm']) ? $conf['skip_confirm'] : -1,
+    );
+
+    $form['signup_settings']['skip_welcome'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Skip welcome mails.'),
+      '#default_value' => !empty($conf['skip_welcome']) ? $conf['skip_welcome'] : -1,
+    );
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function peytz_mail_block_save($delta = '', $edit = array()) {
+  if ($delta == 'peytz_mail_subscribe_box') {
+    if (isset($edit['newsletter_lists'])) {
+      $mailinglists = peytz_mail_get_mailing_lists();
+
+      $selected_lists = array();
+      foreach ($edit['newsletter_lists'] as $list) {
+        $selected_lists[] = $mailinglists[$list];
+      }
+
+      $edit['newsletter_lists'] = $selected_lists;
+    }
+    variable_set($delta . '_block_conf', $edit);
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function peytz_mail_block_view($delta = '') {
+  // This example comes from node.module. Note that you can also return a
+  // renderable array rather than rendered HTML for 'content'.
+  $block = array();
+
+  switch ($delta) {
+    case 'peytz_mail_subscribe_box':
+      $conf = variable_get($delta . '_block_conf', array());
+
+      if (!empty($conf['override_title']) && !empty($conf['override_title_text'])) {
+        $block['subject'] = check_plain($conf['override_title_text']);
+      }
+      else {
+        $block['subject']= t('Newsletter signup');
+      }
+      if (!empty($conf)) {
+        $block['content'] = drupal_get_form('peytz_mail_subscribe_form', $conf);
+      }
+      break;
+
+  }
+  return $block;
+}
+
+/**
+ * Retrieve mailing lists from Peytz Mail API.
+ *
+ * @param string $id
+ *   Applying a mailing list id will return that single mailing list.
+ *
+ * @return array
+ *   Available mailing lists.
+ */
+function peytz_mail_get_mailing_lists($id = NULL) {
+  if (empty($id)) {
+    $mailing_list_result = peytz_mail_api_call('mailinglists');
+  }
+  else {
+    $mailing_list_result = peytz_mail_api_call('mailinglists/' . $id);
+  }
+  if (!empty($mailing_list_result)) {
+    $data = drupal_json_decode($mailing_list_result);
+  }
+
+  $list_data = array();
+  if (isset($data['mailinglists'])) {
+    $list_data = $data['mailinglists'];
+  }
+  elseif (isset($data['mailinglist'])) {
+    $list_data[] = $data['mailinglist'];
+  }
+
+  $mailinglists = array();
+  foreach ($list_data as $list) {
+    if ($list['public'] === TRUE) {
+      $mailinglists[$list['id']] = array(
+        'id' => check_plain($list['id']),
+        'title' => check_plain($list['title']),
+        'description' => check_plain($list['description']),
+        'weight' => $list['public_position'],
+      );
+
+    }
+  }
+  return $mailinglists;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ *
+ * It simply tells panels where to find the .inc files that define various
+ * args, contexts, content_types. In this case the subdirectories of
+ * ctools_plugin_example/panels are used.
+ */
+function peytz_mail_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/$plugin";
+  }
+}

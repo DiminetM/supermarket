@@ -1,0 +1,84 @@
+<?php
+/**
+ * @file
+ * Install functions for the Peytz Mail module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function peytz_mail_schema() {
+  $schema = array();
+
+  $schema['peytz_mail_queue'] = array(
+    'description' => 'Stores operations to be performed on external mailer service.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The unique ID for this operation.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'entity_id' => array(
+        'description' => 'The object for which the request was made',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'method' => array(
+        'description' => 'The name of the method of external system communication class, for example "subscribe", "createMailingList" etc.',
+        'type' => 'varchar',
+        'length' => '64',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'arguments' => array(
+        'description' => 'Arguments that will be passed to the method.',
+        'type' => 'blob',
+        'not null' => FALSE,
+      ),
+      'response' => array(
+        'description' => 'The response received from the server',
+        'type' => 'blob',
+        'not null' => FALSE,
+      ),
+      'created' => array(
+        'description' => 'The timestamp of the moment operation was put into queue.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'processed' => array(
+        'description' => 'The timestamp of the moment when operation was attempted for processing.',
+        'type' => 'int',
+        'not null' => FALSE,
+        'unsigned' => TRUE,
+      ),
+      'status' => array(
+        'description' => 'The processing status of an operation',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'status' => array('status'),
+      'entity_id' => array('entity_id'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function peytz_mail_uninstall() {
+  // Remove Peytz mail integration settings.
+  variable_del('peytz_mail_service_url');
+  variable_del('peytz_mail_api_key');
+  variable_del('peytz_mail_debug_enabled');
+}

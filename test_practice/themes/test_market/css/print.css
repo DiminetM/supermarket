@@ -1,0 +1,26 @@
+/**
+ * @file
+ * Styles specific for LiteCommerce widgets
+ */
+
+.sidebar,
+.section .tabs,
+#toolbar,
+#main-menu,
+.lc-minicart,
+#search,
+#social-links,
+#header-bar,
+#header,
+#breadcrumb,
+#footer-area,
+#header-area,
+.order-success-panel,
+h1 {
+  display: none;
+}
+
+#content {
+  width: 960px !important;
+  float: none;
+}

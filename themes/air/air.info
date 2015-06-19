@@ -1,0 +1,84 @@
+; General information
+name        = Air
+version     = 0.1
+description = 2011 theme for Peytz & Co.
+screenshot  = images/screenshot.png
+
+; Technical specifications
+core   = 7.x
+engine = phptemplate
+
+; Regions
+regions[help] = Help
+regions[highlighted] = Highlighted
+regions[header] = Header
+regions[promo] = Promo section
+regions[footer] = Footer
+regions[sidebar_first] = Sidebar First
+regions[sidebar_second] = Sidebar Second
+regions[content] = Content
+
+scripts[] = scripts/jquery.wookmark.min.js
+scripts[] = scripts/base.js
+scripts[] = scripts/slideshow.js
+scripts[] = scripts/placeholders.js
+scripts[] = scripts/theme.js
+
+
+; Development
+scripts[] = scripts/hashgrid/hashgrid.js
+stylesheets[all][] = scripts/hashgrid/hashgrid.css
+
+; Drupal system overrides
+stylesheets[all][] = styles/css/drupal.css
+
+; Theme
+stylesheets[all][] = styles/css/drupal.css
+stylesheets[all][] = styles/css/fonts.css
+stylesheets[all][] = styles/css/reset.css
+stylesheets[all][] = styles/css/base.css
+stylesheets[all][] = styles/css/nav.css
+stylesheets[all][] = styles/css/forms.css
+stylesheets[all][] = styles/css/views.css
+stylesheets[all][] = styles/css/panels.css
+stylesheets[all][] = styles/css/nodes.css
+stylesheets[all][] = styles/css/modal.css
+stylesheets[all][] = styles/css/grid.css
+stylesheets[print][] = styles/css/print.css
+
+; Omit core stylesheets.
+; Note that several stylesheets are left included because of their non-invasive
+; or isolated nature:
+;
+;   color/color.css
+;   locale/locale.css
+;
+; Other functionally critical styles should be reimplemented in `drupal.css`
+; without styles that compromise the typographical grid or otherwise complicate
+; subtheming.
+
+stylesheets[all][] = admin.css
+stylesheets[all][] = block.css
+stylesheets[all][] = book.css
+stylesheets[all][] = comment.css
+stylesheets[all][] = dblog.css
+stylesheets[all][] = defaults.css
+stylesheets[all][] = forum.css
+stylesheets[all][] = help.css
+stylesheets[all][] = maintenance.css
+stylesheets[all][] = node.css
+stylesheets[all][] = openid.css
+stylesheets[all][] = poll.css
+stylesheets[all][] = profile.css
+stylesheets[all][] = search.css
+stylesheets[all][] = system.css
+stylesheets[all][] = system.menus.css
+stylesheets[all][] = system.theme.css
+stylesheets[all][] = taxonomy.css
+stylesheets[all][] = tracker.css
+stylesheets[all][] = update.css
+stylesheets[all][] = user.css
+
+; Settings
+settings[air_rebuild_registry] = 0
+

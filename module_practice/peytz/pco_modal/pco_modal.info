@@ -1,0 +1,5 @@
+name = Peytz modal
+description = "Drupal optimized modal implementation. Maintained by Peytz & Co."
+core = 7.x
+version = 0.5b
+package = Peytz Drupal

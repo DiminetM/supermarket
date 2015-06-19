@@ -1,0 +1,122 @@
+section div.pane-content {
+  zoom: 1;
+}
+
+section.pane-pco-blocks.orange div.pane-content,
+section.pane-pco-blocks.grey div.pane-content,
+section.pane-pco-blocks.dark div.pane-content {
+  padding: 15px;
+}
+
+section.pane-pco-blocks.strict div.pane-content {
+  padding: 15px 0 0;
+}
+
+/* @group Nav */
+
+div[role="navigation"] nav {
+  padding: 10px 14px 0;
+}
+
+div[role="navigation"] nav ul li a {
+  float: left;
+  display: block;
+	margin: 0 0.071428571em;
+	padding: 3px 8px;
+}
+
+/* @end */
+/* @group Forms */
+
+label {
+  display: none;
+}
+
+input.form-text,
+textarea {
+	margin: 0;
+	padding: 6px 4%;
+	height: 14px;
+	width: 92%;
+	min-width: 20px;
+	font: normal 14px/14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+	border: 1px solid rgb(215,215,215);
+}
+
+footer input.form-text,
+div.pane-webform-client-block-127 input.form-text {
+  padding: 6px 4% !important;
+  width: 92% !important;
+  border: none;
+}
+
+input.form-submit,
+footer input.form-submit {
+  float: left;
+  margin: 0 5px 0 0;
+  padding: 3px 8px !important;
+  font: bold 14px/14px "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+
+/* @group Search */
+
+header[role="banner"] div.block-search {
+	position: absolute;
+	top: 0;
+	right: 0;
+	padding: 10px 0 0;
+} 
+ 
+header[role="banner"] div.block-search div.form-item {
+	float: left;
+	margin: 0;
+	padding: 0;
+}
+
+header[role="banner"] div.block-search div.form-item input.form-text {
+  float: left;
+  padding: 5px 8px 4px;
+  width: 136px;
+  min-width: auto;
+  text-indent: 0;
+  font: normal 14px/14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 14px;
+	border-width: 1px 0 1px 1px;
+}
+
+header[role="banner"] div.block-search div.form-actions {
+	float: none;
+	overflow: hidden;
+}
+
+
+/* @end */
+/* @group Placeholders */
+
+div.form-item.js-input-ph label {
+  position: absolute;
+  top: 5px;
+  left: 9px;
+  cursor: text;
+  color: rgb(180,180,180);
+  font: normal 1.071428571em/1.1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.js-input-ph footer div.form-item label {
+  top: 6px;
+}
+
+/* @end */
+/* @end */
+/* @group Slider*/
+
+section.panel-pane div.view-slideshow-frontpage {
+  height: 298px;
+}
+
+section.panel-pane div.view-slideshow-frontpage div.view-content ul li {
+	width: 100%;
+	height: 298px;
+}
+
+/* @end */

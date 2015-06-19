@@ -1,0 +1,107 @@
+<?php
+/**
+ * Implements hook_ctools_plugin_directory().
+ *
+ * It simply tells panels where to find the .inc files that define various
+ * args, contexts, content_types. In this case the subdirectories of
+ * ctools_plugin_example/panels are used.
+ */
+function pco_blocks_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/$plugin";
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function pco_blocks_menu() {
+  $items['pcoblocks/autocomplete/node_title'] = array(
+    'page callback' => 'pco_blocks_autocomplete_node_title',
+    'access arguments' => array('access content'),
+  );
+  return $items;
+}
+
+/**
+ * Callback for the content type.
+ */
+function pco_blocks_autocomplete_node_title($string = '') {
+  $type = 'node';
+
+  $entity = entity_get_info($type);
+  if ($string != '') {
+    // Set up the query
+    $query = db_select($entity['base table'], 'b');
+    if ($entity['entity keys']['label']) {
+      $query->fields('b', array($entity['entity keys']['id'], $entity['entity keys']['label']))->range(0, 10);
+    }
+    else {
+      $query->fields('b', array($entity['entity keys']['id']))->range(0, 10);
+    }
+
+    $preg_matches = array();
+    $match = preg_match('/\[id: (\d+)\]/', $string, $preg_matches);
+    if (!$match) {
+      $match = preg_match('/^id: (\d+)/', $string, $preg_matches);
+    }
+    if ($match) {
+      $query->condition('b.' . $entity['entity keys']['id'], $preg_matches[1]);
+    }
+    elseif ($entity['entity keys']['label']) {
+      $query->condition('b.' . $entity['entity keys']['label'], '%' . db_like($string) . '%', 'LIKE');
+    }
+
+    $matches = array();
+    if ($type == 'node') {
+      $query->fields('b', array($entity['entity keys']['language']));
+      $query->addField('l', 'name', 'lang_name');
+      $query->join('languages', 'l', 'b.language = l.language');
+
+      if (!user_access('bypass node access')) {
+        // If the user is able to view their own unpublished nodes, allow them
+        // to see these in addition to published nodes.
+        if (user_access('view own unpublished content')) {
+          $query->condition(db_or()
+            ->condition('b.status', NODE_PUBLISHED)
+            ->condition('b.uid', $GLOBALS['user']->uid)
+          );
+        }
+        else {
+          // If not, restrict the query to published nodes.
+          $query->condition('b.status', NODE_PUBLISHED);
+        }
+      }
+
+      $query->addTag('node_access');
+      $query->join('users', 'u', 'b.uid = u.uid');
+      $query->addField('u', 'name', 'name');
+
+      foreach ($query->execute() as $nodeish) {
+        $name = empty($nodeish->name) ? variable_get('anonymous', t('Anonymous')) : check_plain($nodeish->name);
+        $matches[$nodeish->title . ' (' . $nodeish->lang_name . ')' . " [id: $nodeish->nid]"] =
+          '<span class="autocomplete_title">' .
+          check_plain($nodeish->title) .
+          '</span> <span class="autocomplete_user">(' .
+          t('by @user', array('@user' => $name)) .
+          ')</span>' .
+          '</span> <span class="autocomplete_lang">(' .
+          t('@lang', array('@lang' => $nodeish->lang_name)) .
+          ')</span>';
+      }
+    }
+    else {
+      foreach ($query->execute() as $item) {
+        $id = $item->{$entity['entity keys']['id']};
+        if ($entity['entity keys']['label']) {
+          $matches[$item->{$entity['entity keys']['label']} . " [id: $id]"] = '<span class="autocomplete_title">' . check_plain($item->{$entity['entity keys']['label']}) . '</span>';
+        }
+        else {
+          $matches["[id: $id]"] = '<span class="autocomplete_title">' . check_plain($item->{$entity['entity keys']['id']}) . '</span>';
+        }
+      }
+    }
+
+    drupal_json_output($matches);
+  }
+}

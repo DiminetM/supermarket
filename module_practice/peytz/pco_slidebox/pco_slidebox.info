@@ -1,0 +1,12 @@
+name = "Peytz Slidebox"
+description = "A slide-out box linking to the next piece of content in a sequence (changes in module slidebox version 2.0-beta3)"
+package = Peytz & Co.
+
+dependencies[] = regions
+
+configure = admin/config/user-interface/slidebox
+
+version = "7.x-1.0"
+core = "7.x"
+project = "pco_slidebox"
+

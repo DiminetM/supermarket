@@ -1,0 +1,16 @@
+name = Peytz client logos
+description = Peytz client logos view and nodequeue
+core = 7.x
+package = Features
+dependencies[] = ctools
+dependencies[] = strongarm
+dependencies[] = views
+dependencies[] = views_content
+features[ctools][] = strongarm:strongarm:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[variable][] = nodequeue_links
+features[variable][] = nodequeue_tab_name
+features[variable][] = nodequeue_use_tab
+features[variable][] = nodequeue_view_per_queue
+features[views_view][] = client_logos

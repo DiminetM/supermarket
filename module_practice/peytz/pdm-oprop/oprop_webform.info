@@ -1,0 +1,10 @@
+name = Oprop Webform
+description = Integrate Peytz Nyhedsbreve with Webform
+core = 7.x
+package = "Peytz & Co."
+configure = admin/config/content/webform/oprop
+
+dependencies[] = oprop_api
+dependencies[] = webform
+
+files[] = oprop_webform.module

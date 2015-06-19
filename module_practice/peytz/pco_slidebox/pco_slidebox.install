@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @file
+ *   Contains routines for installation of Pco Slidebox.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function pco_slidebox_install() {
+  db_update('system')
+    ->expression('weight', 'weight + :weight', array(':weight' => 1))
+    ->condition('name', 'pco_slidebox')
+    ->condition('type', 'module')
+    ->execute();
+}

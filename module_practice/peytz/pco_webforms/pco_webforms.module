@@ -1,0 +1,808 @@
+<?php
+
+/**
+ * Implements hook_permission().
+ */
+function pco_webforms_permission() {
+  return array(
+    'access webform submissions table' => array(
+      'title' => t('Administer webform submissions table'),
+      'description' => t('Perform administration for webform submissions table.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function pco_webforms_menu() {
+  $items = array();
+  $items['admin/config/content/webform-submissions-table'] = array(
+    'title' => 'Administer webform submissions',
+    'description' => 'Webform submissions management.',
+    'page callback' => 'pco_webforms_webform_submissions_table',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function pco_webforms_form_alter(&$form, &$form_state, $form_id) {
+
+//  if ($form_id == 'product_node_form') {
+//    $script = '
+//      jQuery(document).ready(function () {
+//        var checkbox = "#product-node-form #edit-field-webform-user-copy-email-und .form-item.form-type-checkbox input.form-checkbox";
+//        jQuery(checkbox).each(function() {
+//          if (jQuery(this).is(":checked")) {
+//            jQuery(this).parent().css({"background-color":"#eee"});
+//          }
+//        });
+//      });
+//    ';
+//    drupal_add_js($script, array('type' => 'inline', 'scope' => 'footer'));
+//  }
+
+  // Check if current displayed form is a webform.
+  if (preg_match('/webform_client_form/', $form_id)) {
+    // Add custom newsletter subscription for speciffic webforms which contains
+    // the element "Subscribe to newsletters" single checkbox (subscribe_to_newsletters)
+    $form['#submit'][] = '_webform_add_newsletter_subscription';
+    // Add custom newsletter slidebox webform submit handler at the begin of submit
+    // processing because need to get previous url after webform's redirect to tak page.
+    array_unshift($form['#submit'], '_pco_webforms_webform_submit_handler');
+  }
+}
+
+/**
+ * Implements hook_mail_alter().
+ */
+function pco_webforms_mail_alter(&$message) {
+  if ($message['module'] == 'webform' && $message['key'] == 'submission') {
+    global $base_url;
+    // Get path of node where current webform was related.
+    $prev_url = str_replace($base_url . '/', '', $_SERVER['HTTP_REFERER']);
+    $original_url_exploded = explode('/', drupal_get_normal_path($prev_url));
+
+    if ((int) $original_url_exploded[1]) {
+      // Get the node object where current webform was related.
+      $webform_related_node = node_load($original_url_exploded[1]);
+
+      // Check if node where current webform was related contains the field
+      // "field_webform_user_copy_email" the user send copy of email field.
+      if (
+        isset($webform_related_node->field_webform_user_copy_email)
+      &&
+        !empty($webform_related_node->field_webform_user_copy_email)
+      ) {
+        foreach( $webform_related_node->field_webform_user_copy_email['und'] as $uid) {
+          $user = user_load($uid['uid']);
+          $email = $user->mail;
+          $message['to'] .= ', ' . $user->mail;
+          $message['subject'] = str_replace(
+            $message['params']['node']->title,
+            $webform_related_node->field_webform_title['und'][0]['safe_value'],
+            $message['subject']
+          );
+        }
+      }
+    }
+
+  }
+}
+
+/**
+ * Custom webform submit callback function for additional preprocess to subscribe
+ * users to newsletters in case the webforms contains the field "subscribe_to_newsletters"
+ * and is checked. After all is a checking of needed list of required fields for
+ * subscribing.
+ */
+function _webform_add_newsletter_subscription($form, &$form_state) {
+  // First of all check if the field "subscribe_to_newsletters" is set for the current webform.
+  if (
+    isset($form_state['values']['submitted_tree']['subscribe_to_newsletters'])
+  &&
+    !empty($form_state['values']['submitted_tree']['subscribe_to_newsletters'])
+  ) {
+    // Checking for fields are present on newsletter subscription webform.
+    if (
+      isset($form_state['values']['submitted_tree']['name'])
+    &&
+      !empty($form_state['values']['submitted_tree']['name'])
+    &&
+      isset($form_state['values']['submitted_tree']['e_mail'])
+    &&
+      !empty($form_state['values']['submitted_tree']['e_mail'])
+    &&
+      isset($form_state['values']['submitted_tree']['telefonnummer'])
+    &&
+      !empty($form_state['values']['submitted_tree']['telefonnummer'])
+    ) {
+      // Get validation rule value for newsletter subscription form.
+      $webform_validation_rule = webform_validation_rule_load(1);
+      $webform_validation_value = end(explode(',', $webform_validation_rule['data']));
+
+      // Get node id of newsletter subscription webform and load the node.
+      $nid = 127;
+      $node = node_load($nid);
+      global $user;
+      // Formate $data array with webform information : name, email, phone number etc.
+      $data = array(
+        // Subscribe hidden field
+        1 => array('value' => array(1)),
+        // Name
+        2 => array('value' => array($form_state['values']['submitted_tree']['name'])),
+        // E-mail
+        4 => array('value' => array($form_state['values']['submitted_tree']['e_mail'])),
+        // Mobile
+        5 => array('value' => array($form_state['values']['submitted_tree']['telefonnummer'])),
+        // Validation field value
+        6 => array('value' => array($webform_validation_value)),
+      );
+      // Formate the $submission object which contais all need informaion for
+      // webform submit.
+      $submission = (object) array(
+        'nid' => $nid,
+        'uid' => $user->uid,
+        'submitted' => time(),
+        'remote_addr' => ip_address(),
+        'is_draft' => 0,
+        'data' => $data,
+      );
+      // Submit webform newsletter subscription.
+      module_load_include('inc', 'webform', 'includes/webform.submissions');
+      webform_submission_insert($node, $submission);
+      webform_submission_send_mail($node, $submission);
+    }
+  }
+}
+
+
+//===[ WEBFORM_OVERVIEW_PAGE ]=== bgn ===
+
+/**
+ * Implements hook_date_popup_process_alter().
+ *
+ * @param array $element
+ *   Full element array data.
+ * @param array $form_state
+ *   Form state data form the current element was created from.
+ * @param array $context
+ *   Form array data the current element was created from.
+ */
+function pco_webforms_date_popup_process_alter(&$element, &$form_state, $context) {
+  // Rename date popup field titles according to webform submissions filter form.
+  if ($element['date']['#name'] == 'date_end[date]') {
+    $element['date']['#title'] = t('Date end');
+  }
+  if ($element['date']['#name'] == 'date_start[date]') {
+    $element['date']['#title'] = t('Date start');
+  }
+}
+
+/**
+ * Custom filter form for webform submissions page.
+ */
+function pco_webforms_webform_submissions_table_form() {
+  $form = array();
+  $allowed_webforms = _pco_webforms_get_product_allowed_webforms();
+
+  $form['main_filter_form'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Filters'),
+  );
+
+  $form['main_filter_form']['nid'] = array(
+    '#title' => t('Webform'),
+    '#type' => 'select',
+    '#options' => $allowed_webforms,
+    '#default_value' => (isset($_GET['nid'])) ? $_GET['nid'] : 0,
+  );
+
+  $form['main_filter_form']['sptitle'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Submitted page title'),
+    '#default_value' => (isset($_GET['sptitle']) ? $_GET['sptitle'] : ''),
+    '#size' => 44,
+  );
+
+  $form['main_filter_form']['splang'] = array(
+    '#type' => 'select',
+    '#options' => array('all' => '- All -', 'da' => t('Danish'), 'nb' => t('Norwegian')),
+    '#default_value' => (isset($_GET['splang'])) ? $_GET['splang'] : 'all',
+    '#title' => t('Submitted page language'),
+  );
+
+  $form['main_filter_form']['date_start'] = array(
+    '#type' => 'date_popup',
+    '#date_format' => 'Y-m-d',
+    '#default_value' => (isset($_GET['date_start']) ? $_GET['date_start'] : ''),
+  );
+  $form['main_filter_form']['date_end'] = array(
+    '#type' => 'date_popup',
+    '#date_format' => 'Y-m-d',
+    '#default_value' => (isset($_GET['date_end']) ? $_GET['date_end'] : ''),
+  );
+
+  $form['main_filter_form']['apply'] = array(
+    '#name' => 'apply',
+    '#type' => 'submit',
+    '#value' => t('Apply'),
+  );
+  $form['main_filter_form']['reset'] = array(
+    '#name' => 'reset',
+    '#type' => 'submit',
+    '#value' => t('Reset'),
+  );
+
+  return $form;
+}
+
+/**
+ * Custom validation for webform table filter form.
+ */
+function pco_webforms_webform_submissions_table_form_validate($form, &$form_state) {
+  // Display error in case there is no start date range.
+  if ($form_state['values']['date_start'] && !$form_state['values']['date_end']) {
+    form_set_error('date_end', t('Set date end range value'));
+  }
+
+  // Display error in case there is no end date range.
+  if ($form_state['values']['date_end'] && !$form_state['values']['date_start']) {
+    form_set_error('date_start', t('Set date start range value'));
+  }
+}
+
+/**
+ * Custom filter form for webform submissions page submit.
+ * After form was submitted need to add all filter values as GET params in url.
+ */
+function pco_webforms_webform_submissions_table_form_submit($form, &$form_state) {
+  $query_params = drupal_get_query_parameters();
+  $params = array('query' => $query_params);
+
+  unset($params['query']['nid']);
+  unset($params['query']['sptitle']);
+  unset($params['query']['splang']);
+  unset($params['query']['date_start']);
+  unset($params['query']['date_end']);
+
+  if ($form_state['clicked_button']['#value'] == $form_state['values']['apply']) {
+    if ($form_state['values']['nid'] != '') {
+      $params['query']['nid'] = $form_state['values']['nid'];
+    }
+    if ($form_state['values']['sptitle']) {
+      $params['query']['sptitle'] = $form_state['values']['sptitle'];
+    }
+    if ($form_state['values']['splang']) {
+      $params['query']['splang'] = $form_state['values']['splang'];
+    }
+    if ($form_state['values']['date_start'] && $form_state['values']['date_end']) {
+      $params['query']['date_start'] = $form_state['values']['date_start'];
+      $params['query']['date_end'] = $form_state['values']['date_end'];
+    }
+  }
+
+  drupal_goto($_GET['q'], $params);
+}
+
+/**
+ * Custom webform submit handler for setting submitted page url field as a link
+ * in view webform table submissions node/%nid/webform-results/table.
+ *
+ * @param array $form
+ *   Entire form array including webform object data.
+ * @param array $form_state
+ *   Form state array data which contains all submitted webform data.
+ */
+function _pco_webforms_webform_submit_handler($form, &$form_state) {
+  global $base_url;
+  // Remove GET params from referer url.
+  $node_url = strtok($_SERVER['HTTP_REFERER'], '?');
+  $basename = str_replace($base_url . '/', '', $node_url); // Get base name from url.
+  $path = drupal_lookup_path('source', $basename); // Get source path string.
+  // Check if Drupal didn't find any path in DB for current url and set as basename.
+  if (!$path) {
+    $path = $basename;
+  }
+  $exploded_path = explode('/', $path);
+  $id = end($exploded_path);
+
+  if (is_numeric($id)) {
+    // Get title for formating url l($title, $node_url).
+    switch ($exploded_path[0]) {
+      case 'taxonomy':
+        $term = taxonomy_term_load($id);
+        $title = $term->name;
+        break;
+      case 'node':
+        $node = node_load($id);
+        $title = $node->title;
+        if ($node->type == 'product' || $node->type == 'blog') {
+          $form_state['values']['submitted']['submitted_page_language'][0] = $node->language;
+          $form_state['values']['submitted']['webform_title'][0] =
+            (!empty($form['#node']->title)) ?
+              $form['#node']->title :
+              $form['submitted']['webform_title']['#title']
+          ;
+        }
+        break;
+      case 'user':
+        $user = user_load(array('uid' => $id));
+        $title = $user->name;
+        break;
+    }
+  }
+  else {
+    // If current url is not a node then it's a panel or a view page.
+    $query = db_select('menu_router')
+      ->fields('menu_router', array('title'))
+      ->condition('path', $path, 'like');
+    $menu_link = $query->execute()->fetchObject();
+    $title = $menu_link->title;
+    if (!$title) {
+      $title = $path;
+    }
+  }
+
+  // Check if it's frontpage.
+  if ($node_url == $base_url . '/') {
+    $title = t('Frontpage');
+    $node_url = '<front>';
+  }
+
+  $form_state['values']['submitted']['submitted_page_url'][0] = l($title, $node_url);
+}
+
+/**
+ * Callback function for displaying all webform submissions in a table format
+ * with additional params and filter form.
+ */
+function pco_webforms_webform_submissions_table() {
+
+  $filters_form = drupal_get_form('pco_webforms_webform_submissions_table_form');
+  $output = drupal_render($filters_form);
+
+  // --- current selected filters --- \
+  $langs = language_list();
+  $filter_name = trim($filters_form['main_filter_form']['nid']['#options'][$filters_form['main_filter_form']['nid']['#value']], ' -');
+  $filter_lang = t('All');
+  if ($filters_form['main_filter_form']['splang']['#value'] != 'all')
+    $filter_lang = $langs[$filters_form['main_filter_form']['splang']['#value']]->name;
+
+  $current_filters =
+    '<div id="pco-webforms-current-filters"><div class="current-filters-title">' .
+    t('Current selected filters') . '</div>' .
+      '<div class="current-filters-item">' . t('Form') . ': <span>' .
+        $filter_name . '</span></div>' .
+      '<div class="current-filters-item">' . t('Title') . ': <span>' .
+        $filters_form['main_filter_form']['sptitle']['#value'] . '</span></div>' .
+      '<div class="current-filters-item">' . t('Language') . ': <span>' .
+        $filter_lang . '</span></div>' .
+      '<div class="current-filters-item">' . t('Start date') . ': <span>' .
+        $filters_form['main_filter_form']['date_start']['#value']['date'] . '</span></div>' .
+      '<div class="current-filters-item">' . t('End date') . ': <span>' .
+        $filters_form['main_filter_form']['date_end']['#value']['date'] . '</span></div>' .
+    '</div>';
+  $output .= $current_filters;
+  // --- current selected filters --- /
+
+  $pager_count = (isset($_GET['results'])) ? $_GET['results'] : 20;
+  $allowed_webforms = _pco_webforms_get_product_allowed_webforms();
+  $ids = array_keys($allowed_webforms);
+
+  if (!isset($_GET['nid']) || $_GET['nid'] == '0') {
+    unset($ids[0]);
+    $nodes = node_load_multiple($ids);
+  }
+  else  {
+    $nodes = node_load_multiple(array($_GET['nid']));
+  }
+
+  $output .= _pco_webforms_results_table($nodes, $pager_count);
+
+  return $output;
+}
+
+/**
+ * Custom function for getting all allowed product related webforms.
+ */
+function _pco_webforms_get_product_allowed_webforms() {
+  // Get related webform field from content type product
+  // which contains the list of webform that can be related.
+  $field = field_info_field('field_related_webform');
+
+  $allowed_webforms = array();
+  if (isset($field['settings']['view']) && !empty($field['settings']['view']['args'])) {
+    // Formate allowed webforms as IDs list like this: 127+260+363.
+    $allowed_nids = $field['settings']['view']['args'][0];
+    $allowed_nids = explode('+', $allowed_nids);
+
+    // Create a query that get all titles and ids from node table using array of nids.
+    $query = db_select('node');
+    $query->fields('node', array('title', 'nid', 'language'));
+    $query->condition('nid', $allowed_nids, 'IN');
+    $query->condition('status', 1, '=');
+    $result = $query->execute()->fetchAll();
+
+    // Formate options for filter by webform field.
+    foreach ($result as $value) {
+      $allowed_webforms[$value->nid] = rtrim($value->title) . ' (' . $value->language . ')';
+    }
+  }
+  $allowed_webforms = array('0' => '- ' . t('All') . ' -') + $allowed_webforms;
+
+  return $allowed_webforms;
+}
+
+function _pco_webforms_results_table_header() {
+  return array(
+    array('data' => t('#'), 'field' => 'sid', 'sort' => 'desc'),
+    array('data' => t('Submitted'), 'field' => 'submitted'),
+    array('data' => t('User'), 'field' => 'name'),
+    array('data' => t('IP Address'), 'field' => 'remote_addr'),
+  );
+}
+
+/**
+ * Callback function that displays a table with all submissions for webforms with custom filters and sorting.
+ */
+function _pco_webforms_results_table($nodes = array(), $pager_count = 0) {
+  if (isset($_GET['results']) && is_numeric($_GET['results'])) {
+    $pager_count = $_GET['results'];
+  }
+
+  $nids = array_keys($nodes);
+
+  //=== THIS IS FOR PHP < 5.3 (testserver actually) ===\\
+  //=== $time_start = date_timestamp_get(date_create($_GET['date_start']));
+  //=== $time_end = date_timestamp_get(date_create($_GET['date_end']));
+  $time_start = (isset($_GET['date_start'])) ? strtotime($_GET['date_start']) : NULL;
+  $time_end = (isset($_GET['date_end'])) ? strtotime($_GET['date_end']) : NULL;
+  //=== THIS IS FOR TEST SERVER, PHP < 5.3 ===//
+
+  $filters = array(
+    'nids' => $nids,
+    'sptitle' => (isset($_GET['sptitle']) ? $_GET['sptitle'] : NULL),
+    'splang' => (isset($_GET['splang']) ? $_GET['splang'] : 'all'),
+    'date_start' => (isset($_GET['date_start']) ? $_GET['date_start'] : NULL),
+    'time_start' => (isset($_GET['date_start']) ? $time_start : NULL),
+    'date_end' => (isset($_GET['date_end']) ? $_GET['date_end'] : NULL),
+    'time_end' => (isset($_GET['date_end']) ? $time_end : NULL),
+  );
+
+  $components_all = array();
+  $components_uniq = array();
+  $store = array();
+  foreach ($nodes as $key => $node) {
+    $components_all[$key] = $node->webform['components'];
+    foreach ($node->webform['components'] as $component) {
+      if (
+        $component['form_key'] == 'submitted_page_url'
+      ||
+        $component['form_key'] == 'submitted_page_language'
+      ||
+        $component['form_key'] == 'webform_title'
+      ) {
+        $store[$component['form_key']] = $component['name'];
+        continue;
+      }
+      else {
+        $components_uniq[$component['form_key']] = $component['name'];
+      }
+    }
+  }
+  $components_uniq += $store;
+
+  $header = _pco_webforms_results_table_header();
+  foreach ($header as $key => $val) {
+    $header[$key]['component_key'] = '';
+    unset($header[$key]['field']);
+  }
+
+  $component_headers = array();
+  foreach ($components_uniq as $key => $item) {
+    $component_headers[] = array(
+      'data' => check_plain($item),
+      //'field' => 'data',
+      'component_key' => $key,
+    );
+  }
+
+  $header = array_merge($header, $component_headers);
+
+  $submissions_data = _pco_webforms_get_submissions($filters, $header, $pager_count);
+  $submissions = (isset($submissions_data['submissions'])) ? $submissions_data['submissions'] : array();
+  $total_count = (isset($submissions_data['rows_count'])) ? $submissions_data['rows_count'] : '';
+
+  if ($total_count) {
+    $output = _pco_webforms_results_table_render(
+      array(
+        'nodes' => $nodes,
+        'header' => $header,
+        'components_all' => $components_all,
+        'submissions' => $submissions,
+        'total_count' => $total_count,
+        'pager_count' => $pager_count
+      )
+    );
+    if ($pager_count) {
+      $output .= theme('pager');
+    }
+  }
+  else {
+    $output = t('There are no related webform to the content type product.');
+  }
+  return $output;
+}
+
+/**
+ * Custom Theme the results table displaying all the submissions for a particular node.
+ *
+ * @param $node
+ *   The node whose results are being displayed.
+ * @param $components
+ *   An associative array of the components for this webform.
+ * @param $submissions
+ *   An array of all submissions for this webform.
+ * @param $total_count
+ *   The total number of submissions to this webform.
+ * @param $pager_count
+ *   The number of results to be shown per page.
+ *
+ * @return $output
+ *   Output html as theme table format with pagination, filters and sorting.
+ */
+function _pco_webforms_results_table_render($variables) {
+  drupal_add_library('webform', 'admin');
+  $langs = language_list();
+
+  $nodes = $variables['nodes'];
+  $header = $variables['header'];
+  $components_all = $variables['components_all'];
+  $submissions = $variables['submissions'];
+  $total_count = $variables['total_count'];
+  $pager_count = $variables['pager_count'];
+
+  $rows = array();
+  $row = array();
+
+  $header_keys = array_keys($header);
+
+  // Generate a row for each submission.
+  foreach ($submissions as $sid => $submission) {
+    $row[] = l($sid, 'node/' . $submission->nid . '/submission/' . $sid);
+    $row[] = format_date($submission->submitted, 'short');
+    $row[] = theme('username', array('account' => $submission));
+    $row[] = $submission->remote_addr;
+
+    // Generate a cell for each component.
+    foreach ($components_all[$submission->nid] as $component) {
+      $data = isset($submission->data[$component['cid']]['value']) ? $submission->data[$component['cid']]['value'] : NULL;
+      $submission_output = webform_component_invoke($component['type'], 'table', $component, $data);
+      $position = 0;
+      foreach ($header as $position => $item) {
+        if ($component['form_key'] == $item['component_key']) {
+          break;
+        }
+      }
+      if ($submission_output !== NULL) {
+        if (
+          $component['form_key'] == 'submitted_page_language'
+        &&
+          in_array($submission_output, array('da', 'nb'))
+        ) {
+          $submission_output = $langs[$submission_output]->name;
+        }
+        $row[$position] = htmlspecialchars_decode($submission_output);
+      }
+    }
+
+    $row_keys = array_keys($row);
+    $missing_keys = array_diff($header_keys, $row_keys);
+    foreach ($missing_keys as $item) {
+      $row[$item] = '';
+    }
+    ksort($row);
+
+    $rows[] = array('data' => $row, 'no_striping' => TRUE);
+    unset($row);
+  }
+
+  $output = '';
+  $output .= _pco_webforms_results_per_page(array('total_count' => $total_count, 'pager_count' => $pager_count));
+  $output .= theme(
+    'table',
+    array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array('class' => array('tablesorter')),
+      'sticky' => FALSE,
+    )
+  );
+  return $output;
+}
+
+//==============================
+
+/**
+ * Theme the list of links for selecting the number of results per page.
+ *
+ * @param $total_count
+ *   The total number of results available.
+ * @param $pager_count
+ *   The current number of results displayed per page.
+ */
+function _pco_webforms_results_per_page($variables) {
+  $total_count = $variables['total_count'];
+  $pager_count = $variables['pager_count'];
+  $output = '';
+
+  // Create a list of results-per-page options.
+  $counts = array(
+    '20' => '20',
+    '50' => '50',
+    '100' => '100',
+    '200' => '200',
+    '500' => '500',
+    '1000' => '1000',
+    '0' => t('All'),
+  );
+
+  $count_links = array();
+  $get_q = drupal_get_query_parameters();
+
+  foreach ($counts as $number => $text) {
+    if ($number < $total_count) {
+      $new_q = array('results' => $number) + $get_q;
+      $count_links[] = l(
+        $text,
+        $_GET['q'],
+        array(
+          'query' => $new_q,
+          'attributes' => array('class' => array($pager_count == $number ? 'selected' : ''))
+        )
+      );
+    }
+  }
+
+  $output .= '<div class="webform-results-per-page">';
+  if (count($count_links) > 1) {
+    $output .= t('Show !count results per page.', array('!count' => implode(' | ', $count_links)));
+  }
+  else {
+    $output .= t('Showing all results.');
+  }
+  if ($total_count > 1) {
+    $output .= ' ' . t('@total results total.', array('@total' => $total_count));
+  }
+  $output .= '</div>';
+
+  return $output;
+}
+
+//==============================
+
+/**
+ * Custom return all the submissions for a particular node.
+ *
+ * @param $filters
+ *   An array of filters to apply to this query. Usually in the format
+ *   array('nid' => $nid, 'uid' => $uid). A single integer may also be passed
+ *   in, which will be equivalent to specifying a $nid filter.
+ * @param $header
+ *   If the results of this fetch will be used in a sortable
+ *   table, pass the array header of the table.
+ * @param $pager_count
+ *   Optional. The number of submissions to include in the results.
+ *
+ * @return $submissions
+ *   Return an array with webform submissions data for a speciffic webform.
+ */
+function _pco_webforms_get_submissions($filters = array(), $header = NULL, $pager_count = 0)
+{
+  $submissions = array();
+
+  // Main query for getting SIDs begin.
+  $pager_query = db_select('webform_submissions', 'ws')->fields('ws', array('sid'));
+
+  // Filtering by webform nid.
+  $pager_query->condition('ws.nid', $filters['nids'], 'IN');
+
+  // Filtering by product page title.
+  if ($filters['sptitle'] != '') {
+    $pager_query->join('webform_submitted_data', 'wsd1', 'wsd1.sid = ws.sid');
+    $pager_query->join('webform_component', 'wc1', 'wc1.cid = wsd1.cid');
+    $pager_query->condition('wc1.form_key', 'submitted_page_url', '=');
+    $pager_query->condition('wsd1.data', '%>%' . $filters['sptitle'] . '%<%' , 'like');
+  }
+
+  // Filtering by product page language.
+  if ($filters['splang'] != 'all') {
+    $pager_query->join('webform_submitted_data', 'wsd2', 'wsd2.sid = ws.sid');
+    $pager_query->join('webform_component', 'wc2', 'wc2.cid = wsd2.cid');
+    $pager_query->condition('wc2.form_key', 'submitted_page_language', '=');
+    $pager_query->condition('wsd2.data', $filters['splang'], '=');
+  }
+
+  // Filtering by date_start and date_end.
+  if ($filters['time_start'] != '' && $filters['time_end'] != '') {
+    $pager_query->fields('ws', array('submitted'));
+    $pager_query->condition('ws.submitted', array($filters['time_start'], $filters['time_end']), 'between');
+  }
+
+  $pager_query->groupBy('sid');
+
+  $rows_count = $pager_query->execute()->rowCount();
+
+  if ($pager_count) {
+    $pager_query = $pager_query->extend('PagerDefault');
+    $pager_query->limit($pager_count);
+  }
+
+  $pager_query->orderBy('sid', 'DESC');
+
+  $result = $pager_query->execute();
+
+  $sids = array();
+  foreach ($result as $row) {
+    $sids[] = $row->sid;
+    $submissions[$row->sid] = FALSE;
+  }
+
+  // If there are no submissions being retrieved, return an empty array.
+  if (empty($sids)) {
+    return $submissions;
+  }
+
+  // Query the required submission data.
+  $query = db_select('webform_submitted_data', 'sd');
+  $query->leftJoin('webform_submissions', 's', 's.sid = sd.sid');
+  $query->leftJoin('users', 'u', 'u.uid = s.uid');
+  $query
+    ->fields('s')
+    ->fields('sd', array('cid', 'no', 'data'))
+    ->fields('u', array('name'))
+    ->condition('sd.sid', $sids, 'IN')
+    ->orderBy('sd.sid', 'ASC')
+    ->orderBy('sd.cid', 'ASC')
+    ->orderBy('sd.no', 'ASC')
+  ;
+
+  $result = $query->execute();
+
+  // Convert the queried rows into submissions.
+  $previous = 0;
+  foreach ($result as $row) {
+    if ($row->sid != $previous) {
+      $submissions[$row->sid] = new stdClass();
+      $submissions[$row->sid]->sid = $row->sid;
+      $submissions[$row->sid]->nid = $row->nid;
+      $submissions[$row->sid]->submitted = $row->submitted;
+      $submissions[$row->sid]->remote_addr = $row->remote_addr;
+      $submissions[$row->sid]->uid = $row->uid;
+      $submissions[$row->sid]->name = $row->name;
+      $submissions[$row->sid]->is_draft = $row->is_draft;
+      $submissions[$row->sid]->data = array();
+    }
+    // CID may be NULL if this submission does not actually contain any data.
+    if ($row->cid) {
+      $submissions[$row->sid]->data[$row->cid]['value'][$row->no] = $row->data;
+    }
+    $previous = $row->sid;
+  }
+
+  $submissions_data = array();
+  $submissions_data['submissions'] = $submissions;
+  $submissions_data['rows_count'] = $rows_count;
+
+  return $submissions_data;
+}
+
+//===[ WEBFORM_OVERVIEW_PAGE ]=== end ===
